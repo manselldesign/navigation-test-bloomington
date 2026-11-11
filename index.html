@@ -13,51 +13,48 @@
 
   WHERE EVERYTHING CAME FROM
   --------------------------
-  Visual spec : Figma "Sidebar Designs" (file aNuo3VFJJcb2ca1umElvkI), frame
-                "Homepage" 5:12499. Tokens, type, spacing and colors below are
-                the values from that frame.
-  Behavior    : prototype-hub/v1.1/sidebar-v2-children. The sidebar model
-                (navModel / renderSidenav / mobile drill) is ported from it.
-  Assets      : assets/ — stickers and icons are SVG exports of the Figma
-                layers; photos are renders of the Figma image slots.
+  Page layout : Figma "Sidebar Designs" (file aNuo3VFJJcb2ca1umElvkI), frame
+                "Homepage" 5:12499: the header, the 260px sidebar, the order of
+                the sections, the section padding and all copy.
+  Components  : the Rivet 3 Component Guide
+                (manselldesign.github.io/rivet-component-guide). Every
+                component's inner spacing, type, hover and focus follows its
+                Developer spec checklist and the guide's built examples.
+  Tokens      : assets/rivet-tokens.css is a copy of the guide's
+                generated/rivet-tokens.css. Mobile values switch below 768px
+                inside that file. Crimson sections use .rvt-theme-crimson.
+  Behavior    : prototype-hub/v1.1/sidebar-v2-children (sidebar model).
 
   WHERE TO EDIT
   -------------
   IA            : the `IA` array in the script at the bottom of this file.
   Homepage copy : <template id="tpl-home">.
   SIDENAV_BREAKPOINT : 1024px, the desktop / mobile split. It appears in the
-                script and in the two `1024px` / `1023.98px` media queries.
-  CONTENT_MAX   : --content-max (1340px, the Figma main-content frame).
+                script and in the `1024px` / `1023.98px` media queries.
+  --content-max : 1340px, the Figma main-content frame.
   ===========================================================================
 -->
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@200..900&family=Roboto+Flex:opsz,slnt,wdth,wght@8..144,-10..0,25..151,100..1000&family=Roboto+Mono:wght@300..700&display=swap">
+<link rel="stylesheet" href="assets/rivet-tokens.css">
 
 <style>
   /* =========================================================================
-     TOKENS (Figma variables, Light theme unless noted)
+     PAGE SETUP
+     The token file has no font families; these point it at the Rivet fonts.
      ========================================================================= */
   :root {
-    --rvt-crimson: #990000;
-    --rvt-crimson-dark: #6d0808;
-    --rvt-crimson-border: #510606;      /* border/default on the Crimson theme */
-    --rvt-text-strong: #1f2528;
-    --rvt-text-default: #343c42;
-    --rvt-border: #edddc4;              /* border/default */
-    --rvt-bg-strong: #faf6ef;           /* background/strong */
-    --rvt-white: #ffffff;
-
-    --font-sans: 'Roboto Flex', system-ui, sans-serif;
-    --font-mono: 'Roboto Mono', ui-monospace, monospace;
-    --font-serif: 'Crimson Pro', Georgia, serif;
-
+    --rvt-font-family-sans: 'Roboto Flex', system-ui, sans-serif;
+    --rvt-font-family-mono: 'Roboto Mono', ui-monospace, monospace;
+    --rvt-font-family-serif: 'Crimson Pro', Georgia, serif;
     --sidenav-width: 260px;
     --sidenav-pad: 24px;
-    --content-max: 1340px;              /* Figma main-content frame */
-    --gutter: 48px;                     /* section side padding */
-    --chrome-h: 69px;                   /* live header height, set from JS */
+    --content-max: 1340px;          /* Figma main-content frame */
+    --gutter: 48px;                 /* page side padding in the Sidebar Figma file */
+    --section-y: var(--rvt-spacing-128);   /* 128 Desktop, 96 at the token's Mobile value; overridden below 768 */
+    --chrome-h: 69px;               /* live header height, set from JS */
     --ease: cubic-bezier(0.4, 0, 0.2, 1);
   }
 
@@ -68,128 +65,153 @@
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background: #fff;
+    background: var(--rvt-background-default);
     color: var(--rvt-text-default);
-    font-family: var(--font-sans);
-    font-size: 16px;
-    line-height: 24px;
-    font-variation-settings: 'wght' 350, 'wdth' 100;
+    font: var(--rvt-font-body-sm-regular);
+    font-stretch: var(--rvt-font-width-semi-expanded);
     -webkit-font-smoothing: antialiased;
+    text-wrap: pretty;              /* no single word alone on a last line (guide: no orphans) */
   }
   h1, h2, h3, p, ul, figure, blockquote { margin: 0; padding: 0; }
-  /* The Figma copy never leaves a single word on the last line; `pretty` does the same. */
-  body { text-wrap: pretty; }
+  h1, h2, h3 { text-wrap: balance; }
   ul { list-style: none; }
   a { color: inherit; text-decoration: none; }
   button { font: inherit; color: inherit; }
   img, svg { display: block; }
   img { max-width: 100%; }
   .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-  :focus-visible { outline: 2px solid var(--rvt-crimson-dark); outline-offset: 2px; }
-  .theme-crimson :focus-visible { outline-color: #fff; }
+  :focus-visible { outline: 2px solid var(--rvt-border-accent-strong); outline-offset: 2px; }
   .icon { flex: none; width: 16px; height: 16px; }
   .icon-12 { flex: none; width: 12px; height: 12px; }
   .icon svg, .icon-12 svg { width: 100%; height: 100%; fill: currentColor; }
 
-  .skip-link { position: absolute; left: -9999px; top: 0; z-index: 100; background: var(--rvt-text-strong); color: #fff; padding: 12px 16px; }
+  .skip-link { position: absolute; left: -9999px; top: 0; z-index: 100; background: var(--rvt-background-inverse); color: var(--rvt-text-inverse); padding: 12px 16px; }
   .skip-link:focus { left: 0; }
 
   /* =========================================================================
-     NAMED TEXT STYLES (Figma text styles)
-     Sizes written "a-b" in Figma are mobile-desktop; they switch at 1024px.
+     TEXT STYLES (guides/text-styles.md)
+     Each token shorthand sets weight, size/line height and family; the width
+     and axes follow it, as the token file says.
      ========================================================================= */
-  .t-display-xl   { font-size: 36px; line-height: 40px; font-variation-settings: 'wght' 825, 'wdth' 100, 'slnt' -10; text-transform: uppercase; }
-  .t-display-lg   { font-size: 29px; line-height: 32px; font-variation-settings: 'wght' 700, 'wdth' 100; }
-  .t-display-md   { font-size: 26px; line-height: 28px; font-variation-settings: 'wght' 700, 'wdth' 100; }
-  .t-display-xs   { font-size: 26px; line-height: 32px; font-variation-settings: 'wght' 700, 'wdth' 100; }
-  .t-body-xl      { font-size: 23px; line-height: 32px; font-variation-settings: 'wght' 350, 'wdth' 100; }
-  .t-body-md      { font-size: 18px; line-height: 28px; font-variation-settings: 'wght' 350, 'wdth' 110; }
-  .t-body-base    { font-size: 16px; line-height: 28px; font-variation-settings: 'wght' 350, 'wdth' 100; }
-  .t-body-sm      { font-size: 16px; line-height: 24px; font-variation-settings: 'wght' 350, 'wdth' 100; }
-  .t-body-sm-strong { font-size: 16px; line-height: 24px; font-variation-settings: 'wght' 600, 'wdth' 100; }
-  .t-action-xl    { font-size: 20px; line-height: 24px; font-variation-settings: 'wght' 600, 'wdth' 100; }
-  .t-action-lg    { font-size: 16px; line-height: 24px; font-variation-settings: 'wght' 600, 'wdth' 100; }
-  .t-action-sm    { font-size: 14px; line-height: 20px; font-variation-settings: 'wght' 600, 'wdth' 100; }
-  .t-action-sm-regular { font-size: 14px; line-height: 20px; font-variation-settings: 'wght' 350, 'wdth' 100; }
-  .t-number       { font-size: 42px; line-height: 44px; font-variation-settings: 'wght' 825, 'wdth' 150; text-box: trim-both cap alphabetic; }
-  .t-editorial-xl { font-family: var(--font-serif); font-weight: 350; font-size: 36px; line-height: 40px; font-variation-settings: normal; }
-  .t-editorial-sm { font-family: var(--font-serif); font-weight: 350; font-size: 20px; line-height: 24px; font-variation-settings: normal; }
-  .t-tag-lg       { font-family: var(--font-mono); font-weight: 350; font-size: 16px; line-height: 24px; letter-spacing: 1px; font-variation-settings: normal; }
-  .t-tag-md       { font-family: var(--font-mono); font-weight: 350; font-size: 14px; line-height: 20px; letter-spacing: 1px; font-variation-settings: normal; }
-  .t-tag-md-caps  { font-family: var(--font-mono); font-weight: 350; font-size: 14px; line-height: 20px; letter-spacing: 2px; text-transform: uppercase; font-variation-settings: normal; }
-  .t-tag-sm       { font-family: var(--font-mono); font-weight: 350; font-size: 12px; line-height: 16px; letter-spacing: 1px; font-variation-settings: normal; }
-  .t-tag-sm-caps  { font-family: var(--font-mono); font-weight: 350; font-size: 12px; line-height: 16px; letter-spacing: 2px; text-transform: uppercase; font-variation-settings: normal; }
-  @media (min-width: 1024px) {
-    .t-display-xl   { font-size: 54px; line-height: 56px; }
-    .t-display-lg   { font-size: 48px; line-height: 52px; }
-    .t-display-md   { font-size: 36px; line-height: 40px; }
-    .t-body-xl      { font-size: 26px; line-height: 36px; }
-    .t-body-md      { font-size: 20px; }
-    .t-body-base    { font-size: 18px; }
-    .t-editorial-xl { font-size: 54px; line-height: 56px; }
-    .t-editorial-sm { font-size: 23px; line-height: 28px; }
-  }
-  .c-brand { color: var(--rvt-crimson); }
-  .c-strong { color: var(--rvt-text-strong); }
+  .t-display-xl-caps { font: var(--rvt-font-display-xl-caps); font-stretch: var(--rvt-font-width-normal); font-variation-settings: var(--rvt-font-axes-display-caps); text-transform: uppercase; }
+  .t-display-lg { font: var(--rvt-font-display-lg-strong); font-stretch: var(--rvt-font-width-normal); font-variation-settings: var(--rvt-font-axes-heading); }
+  .t-display-md { font: var(--rvt-font-display-md-strong); font-stretch: var(--rvt-font-width-normal); font-variation-settings: var(--rvt-font-axes-heading); }
+  .t-display-xs { font: var(--rvt-font-display-xs-strong); font-stretch: var(--rvt-font-width-normal); font-variation-settings: var(--rvt-font-axes-heading); }
+  .t-body-xl   { font: var(--rvt-font-body-xl-regular); font-stretch: var(--rvt-font-width-semi-expanded); }
+  .t-body-md   { font: var(--rvt-font-body-md-regular); font-stretch: var(--rvt-font-width-semi-expanded); }
+  .t-body-base { font: var(--rvt-font-body-base-regular); font-stretch: var(--rvt-font-width-semi-expanded); }
+  .t-body-sm   { font: var(--rvt-font-body-sm-regular); font-stretch: var(--rvt-font-width-semi-expanded); }
+  .t-body-sm-strong { font: var(--rvt-font-body-sm-strong); font-stretch: var(--rvt-font-width-semi-expanded); }
+  .t-action-xl-fixed { font: var(--rvt-font-action-xl-strong-fixed); font-stretch: var(--rvt-font-width-semi-expanded); }
+  .t-action-lg { font: var(--rvt-font-action-lg-strong); font-stretch: var(--rvt-font-width-semi-expanded); }
+  .t-action-sm { font: var(--rvt-font-action-sm-strong); font-stretch: var(--rvt-font-width-semi-expanded); }
+  .t-action-sm-regular { font: var(--rvt-font-action-sm-regular); font-stretch: var(--rvt-font-width-semi-expanded); }
+  .t-number    { font: var(--rvt-font-component-number-strong); font-stretch: 150%; text-box: trim-both cap alphabetic; }
+  .t-editorial-xl { font: var(--rvt-font-editorial-xl-regular); }
+  .t-editorial-sm { font: var(--rvt-font-editorial-sm-regular); }
+  .t-tag-lg     { font: var(--rvt-font-tag-lg-regular); letter-spacing: var(--rvt-font-tracking-lg); }
+  .t-tag-md     { font: var(--rvt-font-tag-md-regular); letter-spacing: var(--rvt-font-tracking-lg); }
+  .t-tag-md-caps{ font: var(--rvt-font-tag-md-caps); letter-spacing: var(--rvt-font-tracking-xl); text-transform: uppercase; }
+  .t-tag-sm     { font: var(--rvt-font-tag-sm-regular); letter-spacing: var(--rvt-font-tracking-lg); }
+  .t-tag-sm-caps{ font: var(--rvt-font-tag-sm-caps); letter-spacing: var(--rvt-font-tracking-xl); text-transform: uppercase; }
 
   /* =========================================================================
-     HEADER — full viewport width at every size (Figma 5:12500)
+     rvt-link (Link page): Normal style. Extra-large in content, Medium in the header.
+     1px border/accent drawn inside. Hover: border/accent-strong, text/brand-strong,
+     icon/accent-strong (150ms). Focus: 2px border/accent-strong, 2px outside.
+     No pressed state. Arrow follows the link type (Internal right, External up-right).
      ========================================================================= */
-  .chrome { position: sticky; top: 0; z-index: 70; background: #fff; }
-  .site-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 12px 24px;
-    background: #fff;
-    border-bottom: 1px solid var(--rvt-border);
+  .rvt-link {
+    display: inline-flex; align-items: center; gap: var(--rvt-spacing-8); flex: none;
+    height: var(--rvt-component-button-height-xl); padding: 0 var(--rvt-spacing-16);
+    box-shadow: inset 0 0 0 1px var(--rvt-border-accent); color: var(--rvt-text-accent); white-space: nowrap;
+    font: var(--rvt-font-action-lg-strong); font-stretch: var(--rvt-font-width-semi-expanded);
+    transition: box-shadow .15s ease-out, color .15s ease-out;
   }
-  .lockup { display: flex; align-items: center; gap: 6px; height: 44px; flex: none; }
-  .lockup img { width: 37px; height: 44px; }
-  .lockup-text { display: flex; flex-direction: column; gap: 2px; padding-top: 1px; text-transform: uppercase; white-space: nowrap; }
-  .lockup-title { font-size: 16px; line-height: 16px; color: var(--rvt-text-strong); font-variation-settings: 'wght' 600, 'wdth' 40, 'opsz' 16; }
-  .lockup-campus { font-size: 14px; line-height: 14px; color: var(--rvt-text-default); font-variation-settings: 'wght' 350, 'wdth' 40, 'opsz' 20; }
-  .header-tools { display: flex; align-items: center; gap: 16px; }
-  .header-ctas { display: flex; align-items: center; gap: 16px; }
-  .cta-sm {
-    display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; flex: none;
-    border: 1px solid var(--rvt-crimson); color: var(--rvt-crimson); white-space: nowrap;
+  .rvt-link .icon, .rvt-link .icon-12 { color: var(--rvt-icon-accent); transition: color .15s ease-out; }
+  .rvt-link:hover { box-shadow: inset 0 0 0 1px var(--rvt-border-accent-strong); color: var(--rvt-text-brand-strong); }
+  .rvt-link:hover .icon, .rvt-link:hover .icon-12 { color: var(--rvt-icon-accent-strong); }
+  .rvt-link--md {
+    height: var(--rvt-component-button-height-md); padding: 0 var(--rvt-spacing-12);
+    font: var(--rvt-font-action-sm-strong); font-stretch: var(--rvt-font-width-semi-expanded);
   }
-  .cta-sm:hover, .cta-sm:active { color: var(--rvt-crimson-dark); border-color: var(--rvt-crimson-dark); }
+  .actions-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rvt-spacing-16); }
+
+  /* rvt-button Icon only, Normal, Medium (header search and menu): 32 × 32, 1px form border,
+     16px icon (12px on Mobile). Hover: form-border-hover and form-text-hover (150ms). */
   .tool-btn {
-    display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex: none; padding: 0;
-    border: 1px solid var(--rvt-text-strong); background: transparent; color: var(--rvt-text-strong); cursor: pointer;
+    display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex: none; padding: 0; cursor: pointer;
+    border: 1px solid var(--rvt-component-button-form-border); background: transparent; color: var(--rvt-component-button-form-text);
+    transition: border-color .15s ease-out, color .15s ease-out;
   }
-  .tool-btn:hover, .tool-btn:active { color: #000; border-color: #000; }
+  .tool-btn:hover { border-color: var(--rvt-component-button-form-border-hover); color: var(--rvt-component-button-form-text-hover); }
   .tool-btn .when-open { display: none; }
   .tool-btn[aria-expanded="true"] .when-open { display: block; }
   .tool-btn[aria-expanded="true"] .when-closed { display: none; }
+
+  /* =========================================================================
+     HEADER — full viewport width (Figma 5:12500, rvt-header)
+     ========================================================================= */
+  .chrome { position: sticky; top: 0; z-index: 70; background: var(--rvt-background-default); }
+  .site-header {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--rvt-spacing-16);
+    padding: var(--rvt-spacing-12) var(--rvt-spacing-24);
+    background: var(--rvt-background-default);
+    border-bottom: 1px solid var(--rvt-border-default);
+  }
+  /* Logo lockup, Campus: 6px mark to text, 1px top padding, lines 2px apart (Header page). */
+  .lockup { display: flex; align-items: center; gap: 6px; height: 44px; flex: none; color: var(--rvt-text-strong); }
+  .lockup img { width: 37px; height: 44px; }
+  .lockup-text { display: flex; flex-direction: column; gap: 2px; padding-top: 1px; text-transform: uppercase; white-space: nowrap; }
+  .lockup-title { font: var(--rvt-font-component-lockup-campus-title); font-stretch: 40%; font-variation-settings: "opsz" 16; color: var(--rvt-text-strong); }
+  .lockup-campus { font: var(--rvt-font-component-lockup-campus-name); font-stretch: 40%; font-variation-settings: "opsz" 20; color: var(--rvt-text-default); }
+  /* Buttons spacing/8 apart (Header page). */
+  .header-tools { display: flex; align-items: center; gap: var(--rvt-spacing-8); }
+  .header-ctas { display: flex; align-items: center; gap: var(--rvt-spacing-8); }
   #sidenav-open { display: none; }
 
-  /* Search — slides open in flow under the header, same ease as the menu. */
+  /* Search: slides open in flow under the header, same 400ms ease as the menu. */
   #search-panel {
-    max-height: 0; overflow: hidden; visibility: hidden; background: #fff;
+    max-height: 0; overflow: hidden; visibility: hidden; background: var(--rvt-background-default);
     transition: max-height 400ms var(--ease), box-shadow 400ms var(--ease);
   }
   #search-panel.is-open { visibility: visible; box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.15); }
-  .search-inner { padding: 24px; }
-  .search-form { display: flex; align-items: center; gap: 8px; height: 48px; padding-left: 12px; border: 1px solid var(--rvt-text-strong); max-width: 533px; margin-left: auto; }
-  .search-form input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; color: var(--rvt-text-strong); }
-  .search-go { height: 48px; padding: 0 16px; border: 0; background: var(--rvt-text-strong); color: #fff; cursor: pointer; }
-  .search-go:hover { background: #000; }
+  .search-inner { padding: var(--rvt-spacing-24); }
+  .search-form {
+    display: flex; align-items: center; gap: var(--rvt-spacing-8); height: 48px; padding-left: var(--rvt-spacing-12);
+    box-shadow: inset 0 0 0 1px var(--rvt-component-button-form-border); max-width: 533px; margin-left: auto;
+  }
+  .search-form:focus-within { outline: 2px solid var(--rvt-border-accent-strong); outline-offset: 2px; }
+  .search-form input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--rvt-text-strong); font: var(--rvt-font-body-sm-regular); font-stretch: var(--rvt-font-width-semi-expanded); }
+  .search-go {
+    height: 48px; padding: 0 var(--rvt-spacing-16); border: 0; cursor: pointer;
+    background: var(--rvt-component-button-form-background); color: var(--rvt-text-on-brand-alt);
+    font: var(--rvt-font-action-lg-strong); font-stretch: var(--rvt-font-width-semi-expanded);
+    transition: background-color .15s ease-out;
+  }
+  .search-go:hover { background: var(--rvt-component-button-form-background-hover); }
 
   /* =========================================================================
      LAYOUT — sidebar locked left, content centered in the remaining space
      ========================================================================= */
   #layout { display: flex; flex: 1; width: 100%; }
-  .rail { flex: none; width: var(--sidenav-width); border-right: 1px solid var(--rvt-border); background: #fff; }
+  .rail { flex: none; width: var(--sidenav-width); box-shadow: inset -1px 0 0 var(--rvt-border-default); background: var(--rvt-background-default); }
   #content-column { flex: 1; min-width: 0; display: flex; flex-direction: column; }
   #main-content { flex: 1; }
   #main-content:focus { outline: none; }
   /* Each band's background runs the full width of the content column; its
-     contents clamp to the Figma max width and center. */
+     contents stop at the Figma max width and center. */
   .wrap { width: 100%; max-width: var(--content-max); margin-inline: auto; }
+  /* A themed band paints its own background/default fill and text color. */
+  .rvt-theme-crimson { background: var(--rvt-background-default); color: var(--rvt-text-default); }
 
   /* =========================================================================
-     SIDENAV (Figma 5:12507; behavior from sidebar-v2-children)
+     SIDENAV (Figma 5:12507; behavior from sidebar-v2-children; states from the
+     guide's rail, which is the same sidenav)
+     Rows: 12px top/bottom on a 44px pitch, 1px border/default under each.
+     Top level: action/sm/strong. Children: action/sm/regular.
+     Current: text/accent + underline. Hover and focus: label underlined,
+     label and chevron text/brand-strong.
      ========================================================================= */
   #sidenav {
     position: sticky; top: var(--chrome-h);
@@ -201,194 +223,329 @@
   #sidenav .nav-btn-back {
     display: flex; width: max-content; max-width: 100%; align-items: center; gap: 8px; height: 24px;
     border: 0; padding: 0; background: transparent; color: var(--rvt-text-strong); cursor: pointer;
+    font: var(--rvt-font-action-sm-strong); font-stretch: var(--rvt-font-width-semi-expanded);
   }
-  #sidenav .nav-btn-back:hover, #sidenav .nav-btn-back:active { color: #000; }
+  #sidenav .nav-btn-back .icon { width: 14px; height: 14px; }
+  #sidenav .nav-btn-back:hover { color: var(--rvt-text-brand-strong); }
   #sidenav a.sidenav-title {
     display: flex; width: 100%; align-items: center; gap: 8px;
-    margin-top: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--rvt-border);
-    color: var(--rvt-crimson); font-size: 16px; line-height: 20px; font-variation-settings: 'wght' 600, 'wdth' 100;
+    margin-top: 14px; padding-bottom: 12px; box-shadow: inset 0 -1px 0 var(--rvt-border-default);
+    color: var(--rvt-text-accent); font: var(--rvt-font-action-sm-strong); font-stretch: var(--rvt-font-width-semi-expanded);
   }
   #sidenav a.sidenav-title .sidenav-title-label { flex: 1; min-width: 0; text-decoration: underline; text-underline-position: from-font; }
+  #sidenav a.sidenav-title:hover { color: var(--rvt-text-brand-strong); }
   #sidenav .sidenav-title-arrow { display: none; }
-  #sidenav-nav ul > li { margin-bottom: -1px; }
   #sidenav .sidenav-item {
     display: flex; width: 100%; align-items: center; gap: 8px;
-    padding: 12px 0 11px; margin: 0; border: 0; border-bottom: 1px solid var(--rvt-border);
+    padding: 12px 0 13px; margin: 0; border: 0; box-shadow: inset 0 -1px 0 var(--rvt-border-default);
     background: transparent; text-align: left; cursor: pointer; color: var(--rvt-text-strong);
   }
-  #sidenav .sidenav-item-label { flex: 1; min-width: 0; font-size: 14px; line-height: 20px; }
-  #sidenav .sidenav-item-label.is-parent { font-variation-settings: 'wght' 600, 'wdth' 100; }
-  #sidenav .sidenav-item-label.is-child { font-variation-settings: 'wght' 350, 'wdth' 100; }
-  #sidenav .sidenav-item.is-current { color: var(--rvt-crimson); }
+  #sidenav-nav ul > li { margin-bottom: -1px; }
+  #sidenav .sidenav-item-label { flex: 1; min-width: 0; }
+  #sidenav .sidenav-item-label.is-parent { font: var(--rvt-font-action-sm-strong); font-stretch: var(--rvt-font-width-semi-expanded); }
+  #sidenav .sidenav-item-label.is-child { font: var(--rvt-font-action-sm-regular); font-stretch: var(--rvt-font-width-semi-expanded); }
+  #sidenav .sidenav-item.is-current { color: var(--rvt-text-accent); }
   #sidenav .sidenav-item.is-current .sidenav-item-label { text-decoration: underline; text-underline-position: from-font; }
-  #sidenav .sidenav-item:hover, #sidenav .sidenav-item:active, #sidenav .sidenav-item:focus-visible { color: var(--rvt-crimson); }
-  #sidenav .sidenav-item:hover .sidenav-item-label,
-  #sidenav .sidenav-item:active .sidenav-item-label,
+  #sidenav .sidenav-item:focus-visible { color: var(--rvt-text-brand-strong); outline-offset: -2px; }
   #sidenav .sidenav-item:focus-visible .sidenav-item-label { text-decoration: underline; text-underline-position: from-font; }
+  @media (hover: hover) {
+    #sidenav .sidenav-item:hover { color: var(--rvt-text-brand-strong); }
+    #sidenav .sidenav-item:hover .sidenav-item-label { text-decoration: underline; text-underline-position: from-font; }
+  }
 
   /* =========================================================================
-     SHARED COMPONENTS
+     rvt-hero-statement (Hero statement page), Crimson
+     Text block spacing/128 top, spacing/48 bottom; body spacing/24 above.
+     Card (rvt-card-hero): component/hero/background, shadow/sm, spacing/16 padding,
+     48px sticker spacing/8 from the text, title action/lg/strong.
      ========================================================================= */
-  .rvt-link {
-    display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 16px; flex: none;
-    border: 1px solid var(--rvt-crimson); color: var(--rvt-crimson); white-space: nowrap;
-  }
-  .rvt-link:hover, .rvt-link:active { color: var(--rvt-crimson-dark); border-color: var(--rvt-crimson-dark); }
-  .theme-crimson .rvt-link { border-color: var(--rvt-bg-strong); color: var(--rvt-bg-strong); }
-  .theme-crimson .rvt-link:hover { border-color: #fff; color: #fff; }
-  .rvt-image { display: block; width: 100%; height: auto; object-fit: cover; }
-  .ratio-3-2 { aspect-ratio: 300 / 200; }
-  .ratio-2-1 { aspect-ratio: 300 / 150; }
-  .ratio-1-1 { aspect-ratio: 1 / 1; }
-  .eyebrow { padding-bottom: 12px; }
-
-  /* rvt-hero-statement (12:11198) */
-  .hero { background: var(--rvt-crimson); color: #fff; }
-  .hero .wrap { padding: 0 var(--gutter) 40px; }
-  .hero-text { padding: 128px 0 48px; text-align: center; }
-  .hero-intro { max-width: 1000px; margin: 0 auto; padding-top: 24px; }
+  .hero { background: var(--rvt-background-default); color: var(--rvt-text-default); }
+  .hero .wrap { padding: 0 var(--gutter) var(--rvt-spacing-40); }
+  .hero-text { padding: var(--rvt-spacing-128) 0 var(--rvt-spacing-48); text-align: center; }
+  .hero-text h1 { color: var(--rvt-text-brand); }
+  .hero-intro { max-width: 1000px; margin: 0 auto; padding-top: var(--rvt-spacing-24); color: var(--rvt-text-default); }
   .hero-media { position: relative; }
+  .hero-media img { width: 100%; height: auto; aspect-ratio: 2 / 1; object-fit: cover; object-position: var(--rvt-image-focus, 50% 0%); }
   .hero-card {
     position: absolute; right: 0; bottom: 0; width: 700px; max-width: 100%;
-    display: flex; align-items: flex-start; gap: 8px; padding: 16px;
-    background: var(--rvt-crimson-dark); filter: drop-shadow(0 2px 4px rgba(31, 37, 40, 0.12));
+    display: flex; align-items: flex-start; gap: var(--rvt-spacing-8); padding: var(--rvt-spacing-16);
+    background: var(--rvt-component-hero-background); box-shadow: var(--rvt-shadow-sm);
   }
   .hero-card img { width: 48px; height: 48px; flex: none; }
-  .hero-card p { flex: 1; min-width: 0; padding-top: 5px; color: #fff; }
+  .hero-card p { flex: 1; min-width: 0; padding-top: var(--rvt-spacing-4); color: var(--rvt-color-base-ultra-light); }
 
-  /* rvt-stat (12:11199) */
-  /* Figma strokes sit inside the box, so rules are drawn as inset shadows and take no space. */
-  .stat { background: var(--rvt-crimson); color: #fff; box-shadow: inset 0 -1px 0 var(--rvt-crimson-border); }
-  .stat-row { box-shadow: inset 0 1px 0 var(--rvt-crimson-border), inset 0 -1px 0 var(--rvt-crimson-border); }
+  /* =========================================================================
+     rvt-stat (Stat group page), Crimson
+     Group: 1px border/default. Stats: spacing/64 top and bottom, spacing/32 sides,
+     1px border/default dividers; spacing/48 side padding around the stats.
+     64px sticker, spacing/24 to the number, spacing/16 number to text.
+     Note: spacing/80 sides (here the page gutter + 32, so it lines up with the stats).
+     ========================================================================= */
+  .stat { background: var(--rvt-background-default); color: var(--rvt-text-brand); box-shadow: inset 0 -1px 0 var(--rvt-border-default); }
+  .stat-row { box-shadow: inset 0 1px 0 var(--rvt-border-default), inset 0 -1px 0 var(--rvt-border-default); }
   .stat-row .wrap { display: flex; padding: 0 var(--gutter); }
-  .stat-item { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 24px; padding: 64px 32px; border-right: 1px solid var(--rvt-crimson-border); }
+  .stat-item { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: var(--rvt-spacing-24); padding: var(--rvt-spacing-64) var(--rvt-spacing-32); box-shadow: inset -1px 0 0 var(--rvt-border-default); }
   .stat-item:first-child { padding-left: 0; }
-  .stat-item:last-child { padding-right: 0; border-right: 0; }
+  .stat-item:last-child { padding-right: 0; box-shadow: none; }
   .stat-item img { width: 64px; height: 64px; }
-  .stat-item div { display: flex; flex-direction: column; gap: 16px; }
-  .stat-note { padding: 16px 80px 16px var(--gutter); color: var(--rvt-bg-strong); }
+  .stat-item div { display: flex; flex-direction: column; gap: var(--rvt-spacing-16); }
+  .stat-note { padding: var(--rvt-spacing-16) var(--rvt-spacing-80) var(--rvt-spacing-16) var(--gutter); color: var(--rvt-text-accent); }
 
-  /* rvt-section-intro (12:11200, 12:11209, 19:8019) */
-  .section { background: #fff; }
-  .section .wrap { display: flex; flex-direction: column; gap: 40px; padding: 128px var(--gutter); }
-  .section-head { display: flex; align-items: flex-end; justify-content: flex-end; gap: 64px; }
+  /* =========================================================================
+     rvt-section-intro, Default (Section intro default page)
+     Meta spacing/12 below; title display/md/strong; body body/base/regular,
+     spacing/16 above; title and body up to 920px. Text to button spacing/64
+     (side by side) or spacing/40 (centered, stacked). Intro to cards spacing/40;
+     cards spacing/40 apart. Section padding: the page's 128 top and bottom.
+     ========================================================================= */
+  .section { background: var(--rvt-background-default); }
+  .section .wrap { display: flex; flex-direction: column; gap: var(--rvt-spacing-40); padding: var(--section-y) var(--gutter); }
+  .section-head { display: flex; align-items: flex-end; justify-content: flex-end; gap: var(--rvt-spacing-64); }
   .section-head-text { flex: 1 0 0; min-width: 0; }
+  .section-head-text .eyebrow { padding-bottom: var(--rvt-spacing-12); color: var(--rvt-text-brand); }
+  .section-head-text h2 { color: var(--rvt-text-brand); }
   .section-head-text h2, .section-head-text p { max-width: 920px; }
-  .section-head-text .t-body-md { padding-top: 24px; }
-  .section-actions { flex: 0 1 439px; min-width: max-content; display: flex; justify-content: flex-end; }
-  .section--news .wrap { padding-top: 96px; }
-  .section--center .wrap { padding-inline: 80px; }
-  .section--center .section-head { display: block; text-align: center; }
+  .section-head-text .t-body-base { padding-top: var(--rvt-spacing-16); color: var(--rvt-text-default); }
+  .section-actions { flex: none; display: flex; justify-content: flex-end; }
+  .section--news .wrap { padding-top: 96px; }  /* Figma Homepage: this intro starts at 96 */
+  .section--center .wrap { padding-inline: var(--rvt-spacing-80); }
+  .section--center .section-head { flex-direction: column; align-items: center; gap: var(--rvt-spacing-40); text-align: center; }
+  .section--center .section-head-text { flex: none; width: 100%; }
   .section--center .section-head-text h2, .section--center .section-head-text p { margin-inline: auto; }
-  .card-row { display: flex; align-items: stretch; gap: 40px; }
+  .card-row { display: flex; align-items: stretch; gap: var(--rvt-spacing-40); }
   .card-row > * { flex: 1 0 0; min-width: 0; }
 
-  /* rvt-card-feature (12:7688) — arrow box pinned bottom-right, out of the text flow */
-  .card-feature, .card-news { position: relative; background: #fff; }
-  .card-feature::before, .card-news::before { content: ""; position: absolute; inset: 0; border: 1px solid var(--rvt-border); pointer-events: none; z-index: 1; }
-  .card-feature-body { padding: 40px; }
-  .card-feature h3 { color: var(--rvt-crimson); text-wrap: balance; }
-  .card-feature h3 a::after { content: ""; position: absolute; inset: 0; }
-  .card-feature:hover h3 a, .card-feature h3 a:focus-visible { text-decoration: underline; text-underline-position: from-font; }
-  .card-feature p { padding: 20px 16px 0 0; }
-  .card-arrow {
-    position: absolute; right: 0; bottom: 0; width: 48px; height: 48px;
-    display: flex; align-items: center; justify-content: center;
-    border-left: 1px solid var(--rvt-border); border-top: 1px solid var(--rvt-border); color: var(--rvt-crimson);
+  /* =========================================================================
+     rvt-card-feature, Vertical, Image (Card feature page + built example)
+     background/raised, 1px border/default drawn inside and on top of the picture.
+     Image 3:2 edge to edge. Text spacing/32 all sides. Title display/xs/strong
+     text/brand; description body/sm/regular, spacing/16 above, stops spacing/8
+     before the arrow box (16px in from the right padding edge).
+     Arrow box spacing/40 square, bottom-right, 1px border/default top and left,
+     16px arrow icon/brand, decorative.
+     Hover only on the title text or the arrow box: title text/accent + underline,
+     arrow box fills background/tint. Instant. Focus: 2px ring right outside the card.
+     ========================================================================= */
+  .card-feature { --cf-pad: var(--rvt-spacing-32); --cf-arrow: var(--rvt-spacing-40);
+    position: relative; display: flex; flex-direction: column; background: var(--rvt-background-raised); }
+  .card-feature::after { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none; box-shadow: inset 0 0 0 1px var(--rvt-border-default); }
+  .card-feature:has(.card-feature__link:focus-visible) { outline: 2px solid var(--rvt-border-accent-strong); outline-offset: 0; }
+  .card-feature__media { position: relative; flex: none; aspect-ratio: 3 / 2; }
+  .card-feature__media img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: var(--rvt-image-focus, 50% 0%); }
+  .card-feature__body { display: flex; flex-direction: column; min-width: 0; padding: var(--cf-pad); }
+  .card-feature__title { color: var(--rvt-text-brand); }
+  .card-feature__link { color: inherit; }
+  .card-feature__link-text { position: relative; z-index: 2; }
+  .card-feature__link::after { content: ""; position: absolute; inset: 0; z-index: 1; }
+  .card-feature__link:focus-visible { outline: none; }
+  .card-feature__desc { padding-top: var(--rvt-spacing-16); color: var(--rvt-text-default); overflow-wrap: break-word; }
+  .card-feature__body > :last-child { padding-right: calc(var(--cf-arrow) - var(--rvt-spacing-32) + var(--rvt-spacing-8)); }
+  .card-feature__arrow {
+    position: absolute; right: 0; bottom: 0; z-index: 2; display: flex; align-items: center; justify-content: center;
+    width: var(--cf-arrow); height: var(--cf-arrow); box-shadow: inset 1px 1px 0 0 var(--rvt-border-default); color: var(--rvt-icon-brand);
+  }
+  .card-feature__link:has(.card-feature__link-text:hover, .card-feature__arrow:hover) .card-feature__link-text { color: var(--rvt-text-accent); text-decoration: underline; }
+  .card-feature__link:has(.card-feature__link-text:hover, .card-feature__arrow:hover) .card-feature__arrow { background: var(--rvt-background-tint); }
+
+  /* =========================================================================
+     rvt-card-news, Vertical, Outlined (Card news page)
+     1px border/default, background/raised, spacing/32 padding. Image 3:2, spacing/32
+     below. Top metadata tag/sm/regular text/brand, spacing/4 below. Title
+     editorial/sm/regular text/strong; arrow 16px, spacing/16 from the title, 7px
+     from the top (External link, so rvt-arrow-up-right). Bottom group spacing/24
+     above; metadata tag/sm/regular text/default.
+     Hover only on the title text: text/accent + underline, instant.
+     ========================================================================= */
+  .card-news { position: relative; display: flex; flex-direction: column; justify-content: space-between; padding: var(--rvt-spacing-32);
+    background: var(--rvt-background-raised); box-shadow: inset 0 0 0 1px var(--rvt-border-default); }
+  .card-news:has(.card-news__link:focus-visible) { outline: 2px solid var(--rvt-border-accent-strong); outline-offset: 0; }
+  .card-news__media { aspect-ratio: 3 / 2; margin-bottom: var(--rvt-spacing-32); }
+  .card-news__media img { width: 100%; height: 100%; object-fit: cover; object-position: var(--rvt-image-focus, 50% 0%); }
+  .card-news__meta { display: block; padding: 0 0 var(--rvt-spacing-4) 2px; color: var(--rvt-text-brand); }
+  .card-news__head { display: flex; align-items: flex-start; gap: var(--rvt-spacing-16); }
+  .card-news__title { flex: 1 0 0; min-width: 0; color: var(--rvt-text-strong); }
+  .card-news__link-text { position: relative; z-index: 2; }
+  .card-news__link::after { content: ""; position: absolute; inset: 0; z-index: 1; }
+  .card-news__link:focus-visible { outline: none; }
+  .card-news__link-text:hover { color: var(--rvt-text-accent); text-decoration: underline; }
+  .card-news__head .icon { margin-top: 7px; color: var(--rvt-icon-strong); }
+  .card-news__bottom { padding-top: var(--rvt-spacing-24); color: var(--rvt-text-default); }
+
+  /* =========================================================================
+     rvt-callout, Strong, Left (Callout page + built example)
+     background/strong, spacing/80 padding, 80px sticker, spacing/32 to the text
+     column (max 850px, spacing/8 above). Eyebrow tag/sm/caps spacing/8 below;
+     title display/xs/strong; description body/sm/regular text/brand, spacing/20
+     above; links Normal XL, spacing/32 above, spacing/16 apart.
+     ========================================================================= */
+  .callout-band .wrap { padding: 0 var(--gutter) var(--section-y); }
+  .callout { display: flex; align-items: flex-start; justify-content: center; gap: var(--rvt-spacing-32); padding: var(--rvt-spacing-80);
+    background: var(--rvt-background-strong); color: var(--rvt-text-brand); }
+  .callout > img { width: 80px; height: 80px; flex: none; }
+  .callout-body { flex: 1 1 0; min-width: 0; max-width: 850px; padding-top: var(--rvt-spacing-8); overflow-wrap: break-word; }
+  .callout-body .t-tag-sm-caps { padding: 0 0 var(--rvt-spacing-8) 2px; }
+  .callout-body .t-body-sm { padding-top: var(--rvt-spacing-20); }
+  .callout-body .actions-row { padding-top: var(--rvt-spacing-32); }
+
+  /* =========================================================================
+     rvt-billboard, one image + list of links (Billboard page + built example)
+     Side by side when the billboard is 800px wide or more: image column 66%,
+     content at least 280px, spacing/32 between, content bottom-aligned.
+     Image 1:1, spacing/24 top, bottom and outer side, cropped from the top centre.
+     Content spacing/48 outer side and bottom (spacing/32 under 1100px wide).
+     Eyebrow spacing/8 below, description spacing/16 above, links spacing/32 above.
+     Stacked under 800px: image 3:2 full width, spacing/20 top and sides; text and
+     links inside one spacing/32 (24px) frame; Mobile type sizes.
+     ========================================================================= */
+  .billboard-band .wrap { padding: 0 var(--gutter); }
+  .billboard-wrap { container-type: inline-size; }
+  .billboard { display: grid; grid-template-columns: minmax(0, 66%) minmax(280px, 1fr); column-gap: var(--rvt-spacing-32); align-items: end; background: var(--rvt-background-strong); }
+  .billboard__media { padding: var(--rvt-spacing-24) 0 var(--rvt-spacing-24) var(--rvt-spacing-24); }
+  .billboard__media img { width: 100%; max-width: 900px; height: auto; aspect-ratio: 1 / 1; object-fit: cover; object-position: var(--rvt-image-focus, 50% 0%); }
+  .billboard__content { min-width: 0; padding: 0 var(--rvt-spacing-48) var(--rvt-spacing-48) 0; overflow-wrap: break-word; }
+  .billboard__eyebrow { padding: 0 0 var(--rvt-spacing-8) 2px; color: var(--rvt-text-brand); }
+  .billboard__title { color: var(--rvt-text-brand); }
+  .billboard__desc { padding-top: var(--rvt-spacing-16); color: var(--rvt-text-default); }
+  .billboard__actions { padding-top: var(--rvt-spacing-32); }
+  @container (max-width: 1099px) {
+    .billboard__content { padding: 0 var(--rvt-spacing-32) var(--rvt-spacing-32) 0; }
+  }
+  @container (max-width: 799px) {
+    .billboard { display: flex; flex-direction: column; align-items: stretch;
+      --rvt-spacing-32: 24px; --rvt-spacing-64: 48px; --rvt-type-size-26: 20px; --rvt-type-line-height-24-32: 24px; }
+    .billboard__media { padding: var(--rvt-spacing-20) var(--rvt-spacing-20) 0; }
+    .billboard__media img { aspect-ratio: 3 / 2; max-width: none; }
+    .billboard__content { padding: 0; }
+    .billboard__text { padding: var(--rvt-spacing-32); }
+    .billboard__title { font-size: var(--rvt-type-size-26); line-height: var(--rvt-type-line-height-24-32); }
+    .billboard__actions { padding: 0 var(--rvt-spacing-32) var(--rvt-spacing-32); }
   }
 
-  /* rvt-card-news */
-  .card-news { display: flex; flex-direction: column; justify-content: space-between; padding: 32px; }
-  .card-news .rvt-image { margin-bottom: 32px; }
-  .card-news .tag { display: block; padding: 0 0 4px 2px; color: var(--rvt-crimson); }
-  .card-news-title { display: flex; align-items: flex-start; gap: 16px; }
-  .card-news-title h3 { flex: 1 0 0; min-width: 0; color: var(--rvt-text-strong); }
-  .card-news-title h3 a::after { content: ""; position: absolute; inset: 0; }
-  .card-news:hover h3 a, .card-news h3 a:focus-visible { text-decoration: underline; text-underline-position: from-font; }
-  .card-news-title .icon { margin-top: 6px; color: var(--rvt-text-strong); }
-  .card-news time { display: block; padding-top: 24px; color: var(--rvt-text-default); }
+  /* rvt-list-hub, Compact, title only (billboard links and interior child links):
+     1px border/default above the first item and between items, none below the last.
+     Items spacing/12 top and bottom (the last one top only); 12px arrow icon/strong
+     in a 16 × 24 slot, spacing/4 to the title; title action/lg/strong text/strong.
+     Hover: title text/accent + underline, arrow icon/accent (150ms). */
+  .list-compact { border-top: 1px solid var(--rvt-border-default); }
+  .list-compact li { border-bottom: 1px solid var(--rvt-border-default); }
+  .list-compact li:last-child { border-bottom: 0; }
+  .list-compact li:last-child a { padding-bottom: 0; }
+  .list-compact a { display: flex; align-items: flex-start; gap: var(--rvt-spacing-4); padding: var(--rvt-spacing-12) 0; color: var(--rvt-text-strong);
+    font: var(--rvt-font-action-lg-strong); font-stretch: var(--rvt-font-width-semi-expanded); text-underline-offset: 3px; transition: color .15s ease-out; }
+  .list-compact .arrow-box { flex: none; display: flex; align-items: center; justify-content: center; width: 16px; height: 24px; color: var(--rvt-icon-strong); transition: color .15s ease-out; }
+  .list-compact .label { flex: 1 1 auto; min-width: 0; }
+  .list-compact a:hover { color: var(--rvt-text-accent); }
+  .list-compact a:hover .label { text-decoration: underline; }
+  .list-compact a:hover .arrow-box { color: var(--rvt-icon-accent); }
 
-  /* rvt-callout (12:11212) */
-  .callout-band .wrap { padding: 0 var(--gutter) 128px; }
-  .callout { display: flex; align-items: flex-start; justify-content: center; gap: 32px; padding: 80px; background: var(--rvt-bg-strong); color: var(--rvt-crimson); }
-  .callout > img { width: 80px; height: 80px; flex: none; }
-  .callout-body { flex: 1 0 0; min-width: 0; max-width: 850px; padding-top: 8px; }
-  .callout-body .t-tag-sm-caps { padding: 0 0 8px 2px; }
-  .callout-body .t-body-sm { padding-top: 20px; }
-  .actions-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding-top: 32px; }
-
-  /* rvt-billboard (12:11207) */
-  .billboard-band .wrap { padding: 0 var(--gutter); }
-  .billboard { display: flex; align-items: flex-end; gap: 32px; background: var(--rvt-bg-strong); }
-  .billboard-media { flex: 0 1 924px; min-width: 0; padding: 24px 0 24px 24px; }
-  .billboard-media img { max-width: 900px; }   /* Figma image slot: 900 × 900 */
-  .billboard-body { flex: 1 0 240px; min-width: 0; padding: 0 48px 48px 0; }
-  .billboard-body .t-tag-sm-caps { padding: 0 0 8px 2px; }
-  .billboard-body .t-body-sm { padding-top: 20px; }
-  .list-hub-sm { padding-top: 32px; }
-  .list-hub-sm a { display: flex; align-items: flex-start; gap: 4px; padding: 12px 0; border-top: 1px solid var(--rvt-border); color: var(--rvt-text-strong); }
-  .list-hub-sm li:last-child a { padding-bottom: 0; }
-  .list-hub-sm .arrow-box { display: flex; align-items: center; width: 16px; height: 24px; flex: none; }
-  .list-hub-sm a:hover span:last-child, .list-hub a:hover span:last-child { text-decoration: underline; text-underline-position: from-font; }
-  .list-hub-sm a:hover, .list-hub a:hover { color: var(--rvt-crimson); }
-
-  /* rvt-text-essay (12:11201) + rvt-image-hub (12:11203) + rvt-quote (12:11210) */
-  .theme-crimson { background: var(--rvt-crimson); color: #fff; }
-  .essay .wrap { padding: 160px 80px 0; }
+  /* =========================================================================
+     rvt-text-essay, one column, Crimson (Text essay page)
+     96px sticker spacing/32 below; eyebrow tag/md/caps spacing/12 below; title
+     display/lg/strong spacing/48 below; body body/xl/regular; buttons spacing/48
+     above, spacing/24 apart, centered. Bottom padding is 0 here: the image hub
+     below continues the same crimson band (Figma Homepage).
+     ========================================================================= */
+  .essay .wrap { padding: 160px var(--rvt-spacing-80) 0; }
   .essay-inner { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
-  .essay-inner > img { width: 95px; height: 96px; margin-bottom: 32px; }
-  .essay-inner h2 { text-align: center; padding-bottom: 24px; }
-  .essay-inner .t-body-xl { align-self: stretch; padding-top: 24px; }
-  .essay-inner .actions-row { justify-content: center; gap: 24px; padding-top: 48px; }
-  .image-hub .wrap { padding: 80px var(--gutter) 0; }
-  .image-hub-secondary { display: flex; gap: 8px; padding-top: 8px; }
-  .image-hub-secondary > * { flex: 1 0 0; min-width: 0; }
-  .image-hub figcaption { padding-top: 16px; }
-  .quote .wrap { display: flex; flex-direction: column; align-items: flex-start; gap: 32px; padding: 160px var(--gutter); }
-  .quote-mark { width: 85px; height: 64px; }
-  .quote-mark img { width: 89px; height: 66px; max-width: none; margin-top: -1px; }
+  .essay-inner > img { width: 96px; height: 96px; margin-bottom: var(--rvt-spacing-32); }
+  .essay-inner .eyebrow { padding-bottom: var(--rvt-spacing-12); color: var(--rvt-text-brand); text-align: center; }
+  .essay-inner h2 { color: var(--rvt-text-brand); text-align: center; padding-bottom: var(--rvt-spacing-48); }
+  .essay-inner .t-body-xl { align-self: stretch; color: var(--rvt-text-default); }
+  .essay-inner .actions-row { justify-content: center; gap: var(--rvt-spacing-24); padding-top: var(--rvt-spacing-48); }
+
+  /* =========================================================================
+     rvt-image-hub, Landscape (Image hub page)
+     Images spacing/8 apart (rows and columns); caption tag/md/regular text/default,
+     spacing/16 above.
+     ========================================================================= */
+  .image-hub .wrap { padding: var(--rvt-spacing-80) var(--gutter) 0; }
+  .image-hub figure img { width: 100%; height: auto; object-fit: cover; object-position: var(--rvt-image-focus, 50% 0%); }
+  .image-hub__main { aspect-ratio: 2 / 1; }
+  .image-hub__secondary { display: grid; grid-template-columns: 1fr 1fr; gap: var(--rvt-spacing-8); padding-top: var(--rvt-spacing-8); }
+  .image-hub__secondary img { aspect-ratio: 1 / 1; }
+  .image-hub figcaption { padding-top: var(--rvt-spacing-16); color: var(--rvt-text-default); }
+
+  /* =========================================================================
+     rvt-quote, Default, Impact (Quote page)
+     Quote icon 85 × 64 icon/brand; spacing/32 between icon, quote and name.
+     Quote editorial/xl/regular; name body/sm/strong; title body/base/regular.
+     ========================================================================= */
+  .quote .wrap { display: flex; flex-direction: column; align-items: flex-start; gap: var(--rvt-spacing-32); padding: 160px var(--gutter); color: var(--rvt-text-brand); }
+  .quote-mark { width: 85px; height: 64px; color: var(--rvt-icon-brand); }
+  .quote-mark svg { width: 100%; height: 100%; overflow: visible; }
   .quote blockquote { max-width: 1160px; }
 
-  /* rvt-list-hub (12:11214) */
-  .quick-links .wrap { display: flex; align-items: flex-start; gap: 64px; padding: 0 var(--gutter); }
+  /* =========================================================================
+     rvt-list-hub, Hub with introduction, Default items (List hub page)
+     Introduction to list spacing/64, side by side. Headline display/md/strong;
+     intro body/md/regular, spacing/24 above. Items spacing/20 top and bottom,
+     spacing/16 sides, 1px border/default under each item, none under the last;
+     16px arrow spacing/8 to the title; title action/xl/strong-fixed text/strong.
+     Hover: title text/accent + underline, arrow icon/accent.
+     ========================================================================= */
+  .quick-links .wrap { display: flex; align-items: flex-start; gap: var(--rvt-spacing-64); padding: 0 var(--gutter); }
   .quick-links .wrap > * { flex: 1 0 0; min-width: 0; }
-  .quick-links p { padding-top: 24px; }
-  .list-hub { padding-top: 4px; }
-  .list-hub a { display: flex; align-items: flex-start; gap: 8px; padding: 20px 16px; box-shadow: inset 0 1px 0 var(--rvt-border), inset 0 -1px 0 var(--rvt-border); color: var(--rvt-text-strong); }
-  .list-hub li:last-child a { box-shadow: none; padding-bottom: 0; }
-  .list-hub .arrow-box { display: flex; align-items: center; height: 24px; flex: none; }
+  .quick-links h2 { color: var(--rvt-text-brand); }
+  .quick-links .t-body-md { padding-top: var(--rvt-spacing-24); color: var(--rvt-text-default); }
+  .list-hub { padding-top: var(--rvt-spacing-4); border-top: 1px solid var(--rvt-border-default); }
+  .list-hub li { border-bottom: 1px solid var(--rvt-border-default); }
+  .list-hub li:last-child { border-bottom: 0; }
+  .list-hub a { display: flex; align-items: flex-start; gap: var(--rvt-spacing-8); padding: var(--rvt-spacing-20) var(--rvt-spacing-16); color: var(--rvt-text-strong);
+    font: var(--rvt-font-action-xl-strong-fixed); font-stretch: var(--rvt-font-width-semi-expanded); transition: color .15s ease-out; }
+  .list-hub li:last-child a { padding-bottom: 0; }
+  .list-hub .arrow-box { display: flex; align-items: center; height: 24px; flex: none; color: var(--rvt-icon-strong); transition: color .15s ease-out; }
+  .list-hub a:hover { color: var(--rvt-text-accent); }
+  .list-hub a:hover .label { text-decoration: underline; }
+  .list-hub a:hover .arrow-box { color: var(--rvt-icon-accent); }
+  .list-hub a:focus-visible { outline-offset: -2px; }
 
-  /* rvt-footer (12:11216) — fills the full width of the content column */
-  .site-footer { padding-top: 80px; }
-  .rvt-footer { background: #fff; box-shadow: inset 0 1px 0 var(--rvt-border); }
-  .footer-social { display: flex; gap: 8px; padding: 16px 24px; }
-  .footer-social a { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: 1px solid var(--rvt-crimson); }
-  .footer-social a:hover { border-color: var(--rvt-crimson-dark); }
-  .footer-social img { width: 12px; height: 12px; }
-  .footer-legal { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; padding: 0 24px 16px; }
+  /* =========================================================================
+     rvt-footer, Light (Footer page)
+     Full width; 1px border/default on top of the footer and above the social row.
+     Social row spacing/16 top and bottom, icons spacing/8 apart (rvt-link Social:
+     24 × 24, border/accent, 12px icon/accent; hover border and icon accent-strong).
+     Bottom bar spacing/16 bottom; 22 × 28 trident, spacing/24 to the legal links;
+     legal links action/sm/regular, spacing/16 apart.
+     Side padding: 24px, the header's inset (Sidebar Figma file).
+     ========================================================================= */
+  .site-footer { padding-top: var(--rvt-spacing-80); }
+  .rvt-footer { background: var(--rvt-color-base-ultra-light); box-shadow: inset 0 1px 0 var(--rvt-border-default); }
+  .footer-social { display: flex; gap: var(--rvt-spacing-8); padding: var(--rvt-spacing-16) 24px; }
+  .footer-social a {
+    display: flex; align-items: center; justify-content: center; width: 24px; height: 24px;
+    box-shadow: inset 0 0 0 1px var(--rvt-border-accent); color: var(--rvt-icon-accent);
+    transition: box-shadow .15s ease-out, color .15s ease-out;
+  }
+  .footer-social a:hover { box-shadow: inset 0 0 0 1px var(--rvt-border-accent-strong); color: var(--rvt-icon-accent-strong); }
+  .footer-social span { width: 12px; height: 12px; background: currentColor; -webkit-mask: var(--i) center / contain no-repeat; mask: var(--i) center / contain no-repeat; }
+  .footer-legal { display: flex; flex-wrap: wrap; align-items: center; gap: var(--rvt-spacing-24); padding: 0 24px var(--rvt-spacing-16); }
   .footer-legal > img { width: 22px; height: 28px; }
-  .footer-legal ul { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--rvt-text-default); }
-  .footer-legal a:hover { text-decoration: underline; }
+  .footer-legal ul { display: flex; flex-wrap: wrap; gap: var(--rvt-spacing-8) var(--rvt-spacing-16); color: var(--rvt-color-base-body); }
+  .footer-legal a { transition: color .15s ease-out; }
+  .footer-legal a:hover { color: var(--rvt-text-brand-strong); text-decoration: underline; }
 
   /* Interior placeholder page */
-  .interior .wrap { padding: 64px var(--gutter) 128px; }
-  .interior h1 { max-width: 920px; }
-  .interior p { max-width: 920px; padding-top: 24px; }
-  .interior .child-links { max-width: 600px; padding-top: 40px; }
+  .interior .wrap { padding: 64px var(--gutter) var(--section-y); }
+  .interior .eyebrow { padding-bottom: var(--rvt-spacing-12); color: var(--rvt-text-brand); }
+  .interior h1 { max-width: 920px; color: var(--rvt-text-brand); }
+  .interior p { max-width: 920px; padding-top: var(--rvt-spacing-16); }
+  .interior .list-compact { max-width: 600px; margin-top: var(--rvt-spacing-40); }
 
-  /* Narrow desktop: the rail is showing but the content column is under ~1020px. */
+  /* =========================================================================
+     NARROW DESKTOP (rail showing, content column under ~1020px)
+     ========================================================================= */
   @media (min-width: 1024px) and (max-width: 1279.98px) {
     .stat-row .wrap { flex-wrap: wrap; }
-    .stat-item { flex: 1 0 50%; padding: 48px 32px 48px 0; border-right: 0; }
-    .stat-item:nth-child(odd) { border-right: 1px solid var(--rvt-crimson-border); }
-    .stat-item:nth-child(even) { padding: 48px 0 48px 32px; }
-    .stat-item:nth-child(-n+2) { border-bottom: 1px solid var(--rvt-crimson-border); }
-    .card-row { gap: 24px; }
-    .card-feature-body { padding: 24px 24px 64px; }
-    .card-feature p { padding-right: 0; }
-    .card-news { padding: 24px; }
+    .stat-item, .stat-item:first-child, .stat-item:last-child { flex: 1 0 50%; padding: var(--rvt-spacing-48) var(--rvt-spacing-32) var(--rvt-spacing-48) 0; box-shadow: none; }
+    .stat-item:nth-child(odd) { box-shadow: inset -1px 0 0 var(--rvt-border-default); }
+    .stat-item:nth-child(even) { padding: var(--rvt-spacing-48) 0 var(--rvt-spacing-48) var(--rvt-spacing-32); }
+    .stat-item:nth-child(1) { box-shadow: inset -1px 0 0 var(--rvt-border-default), inset 0 -1px 0 var(--rvt-border-default); }
+    .stat-item:nth-child(2) { box-shadow: inset 0 -1px 0 var(--rvt-border-default); }
+    .card-row { gap: var(--rvt-spacing-24); }
+    .card-news { padding: var(--rvt-spacing-24); }
+    .card-news__media { margin-bottom: var(--rvt-spacing-24); }
     .section--center .wrap, .essay .wrap { padding-inline: var(--gutter); }
-    .callout { padding: 48px; }
+    .callout { padding: var(--rvt-spacing-48); }
   }
 
   /* =========================================================================
@@ -401,14 +558,15 @@
     .site-header { flex-wrap: wrap; padding: 12px 16px 0; row-gap: 0; }
     .header-tools { display: contents; }
     .lockup { order: 1; margin-right: auto; }
-    #search-toggle { order: 2; margin-right: 8px; }
+    #search-toggle { order: 2; }
     #sidenav-open { display: flex; order: 3; }
-    .header-ctas { order: 4; flex: 0 0 100%; justify-content: flex-end; gap: 8px; padding: 16px 0 12px; }
+    .header-ctas { order: 4; flex: 0 0 100%; justify-content: flex-end; padding: 16px 0 12px; }
+    .tool-btn .icon { width: 12px; height: 12px; }
     .search-inner { padding: 16px; }
     .search-form { max-width: none; }
 
     #layout { display: block; }
-    .rail { width: 100%; border-right: 0; }
+    .rail { width: 100%; box-shadow: none; }
     #sidenav {
       position: relative; top: auto; z-index: 2;
       max-height: 0; overflow: hidden; padding: 0; visibility: hidden; pointer-events: none;
@@ -416,50 +574,82 @@
     }
     #sidenav.is-open { visibility: visible; pointer-events: auto; box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.15); }
     #sidenav-nav { padding: 44px 16px 8px; border-bottom: 1px solid transparent; }
-    #sidenav-nav ul > li:last-child .sidenav-item { border-bottom-color: transparent; }
+    #sidenav-nav ul > li:last-child .sidenav-item { box-shadow: none; }
     #sidenav .sidenav-mobile-tools { display: flex; align-items: center; padding-bottom: 8px; }
-    #sidenav .sidenav-mobile-tools .nav-btn-back { height: auto; }
-    #sidenav a.sidenav-title { color: var(--rvt-text-strong); }
+    #sidenav .sidenav-mobile-tools .nav-btn-back { height: auto; font: var(--rvt-font-action-lg-strong); font-stretch: var(--rvt-font-width-semi-expanded); }
+    #sidenav .sidenav-mobile-tools .nav-btn-back .icon { width: 16px; height: 16px; }
+    #sidenav a.sidenav-title { color: var(--rvt-text-strong); font: var(--rvt-font-action-lg-strong); font-stretch: var(--rvt-font-width-semi-expanded); }
     #sidenav a.sidenav-title .sidenav-title-label { text-decoration: none; }
-    #sidenav a.sidenav-title[aria-current="page"] { color: var(--rvt-crimson); }
+    #sidenav a.sidenav-title[aria-current="page"] { color: var(--rvt-text-accent); }
     #sidenav a.sidenav-title[aria-current="page"] .sidenav-title-label { text-decoration: underline; }
     #sidenav .sidenav-title-arrow { display: block; }
 
-    .hero-text { padding: 64px 0 32px; }
     .stat-row .wrap { flex-wrap: wrap; }
-    .stat-item { flex: 1 0 50%; padding: 40px 24px 40px 0; border-right: 0; border-bottom: 1px solid var(--rvt-crimson-border); }
-    .stat-item:nth-last-child(-n+2) { border-bottom: 0; }
-    .stat-note { padding-right: var(--gutter); }
-    .section .wrap, .section--news .wrap, .section--center .wrap { padding: 64px var(--gutter); }
-    .section-head { flex-direction: column; align-items: flex-start; gap: 24px; }
+    .stat-item, .stat-item:first-child, .stat-item:last-child { flex: 1 0 50%; padding: var(--rvt-spacing-64) var(--rvt-spacing-32) var(--rvt-spacing-64) 0; box-shadow: inset 0 -1px 0 var(--rvt-border-default); }
+    .stat-item:nth-last-child(-n+2) { box-shadow: none; }
+    .section-head { flex-direction: column; align-items: flex-start; gap: var(--rvt-spacing-32); }
     .section-head-text { flex: none; width: 100%; }
-    .section-actions { width: auto; }
-    .section--center .section-actions { justify-content: center; }
-    .card-row { flex-direction: column; gap: 24px; }
-    .card-feature-body { padding: 32px 32px 64px; }
-    .card-feature p { padding-right: 0; }
-    .card-arrow { width: 32px; height: 32px; }
-    .callout-band .wrap { padding-bottom: 64px; }
-    .callout { flex-direction: column; padding: 32px; gap: 16px; }
-    .callout-body { flex: none; padding-top: 0; }
-    .billboard { flex-direction: column; align-items: stretch; gap: 8px; }
-    .billboard-media { flex: none; padding: 24px 24px 0; }
-    .billboard-body { flex: none; padding: 24px; }
-    .essay .wrap { padding: 80px var(--gutter) 0; }
-    .image-hub .wrap { padding-top: 40px; }
-    .quote .wrap { padding: 80px var(--gutter); }
-    .quick-links .wrap { flex-direction: column; gap: 32px; }
+    .card-row { flex-direction: column; gap: var(--rvt-spacing-24); }
+    .callout-band .wrap { padding-bottom: var(--section-y); }
+    .quick-links .wrap { flex-direction: column; gap: var(--rvt-spacing-32); }
     .quick-links .wrap > * { flex: none; width: 100%; }
-    .interior .wrap { padding: 40px var(--gutter) 64px; }
+    .interior .wrap { padding-top: 40px; }
   }
-  @media (max-width: 760px) {
-    /* Card sits below the photo and overlaps its bottom edge. */
-    .hero-card { position: relative; width: 100%; margin-top: -7%; }
-    .stat-item { flex-basis: 100%; }
-    .stat-item:nth-last-child(2) { border-bottom: 1px solid var(--rvt-crimson-border); }
+
+  /* =========================================================================
+     MOBILE (under 768px): the token file switches spacing and type to their
+     Mobile values here. These are the per-component Mobile rules from the guide.
+     ========================================================================= */
+  @media (max-width: 767px) {
+    :root { --section-y: var(--rvt-spacing-64); }      /* 48px */
+    /* Hero statement: spacing/40 top and bottom, spacing/24 sides; text block starts
+       at the top padding; body spacing/20 above; card full width below the photo,
+       spacing/8 above, sticker above the text. */
+    .hero .wrap { padding: var(--rvt-spacing-40) var(--gutter); }
+    .hero-text { padding: 0 0 var(--rvt-spacing-32); }
+    .hero-intro { padding-top: var(--rvt-spacing-20); }
+    .hero-media img { aspect-ratio: 327 / 200; }   /* Mobile single photo 327 × 200 */
+    .hero-card { position: relative; width: 100%; margin-top: var(--rvt-spacing-8); flex-direction: column; }
+    .hero-card p { padding-top: 0; }
+    /* Stat group: stats run edge to edge at the 24px margin, one per row. */
+    .stat-item, .stat-item:first-child, .stat-item:last-child { flex-basis: 100%; padding: var(--rvt-spacing-64) 0; }
+    .stat-item:nth-last-child(2) { box-shadow: inset 0 -1px 0 var(--rvt-border-default); }
+    .stat-note { padding-inline: var(--rvt-spacing-32); }
+    /* Section intro: 24px gaps, centered text stacks. */
+    .section .wrap, .section--news .wrap, .section--center .wrap { padding: var(--section-y) var(--gutter); gap: var(--rvt-spacing-32); }
+    .section--center .section-head { gap: var(--rvt-spacing-32); }
+    /* Feature card: spacing/32 top and sides (24px), spacing/64 bottom (48px); arrow box 32px. */
+    .card-feature { --cf-pad: var(--rvt-spacing-32) var(--rvt-spacing-32) var(--rvt-spacing-64); }
+    .card-feature__body > :last-child { padding-right: 0; }
+    /* News card: spacing/24 padding and image gap. */
+    .card-news { padding: var(--rvt-spacing-24); }
+    .card-news__media { margin-bottom: var(--rvt-spacing-24); }
+    /* Callout: spacing/32 (24px) top and sides, spacing/40 (32px) bottom; 64px sticker,
+       spacing/20 to the text; links stacked, each hugging its label. */
+    .callout { flex-direction: column; align-items: stretch; gap: var(--rvt-spacing-20); padding: var(--rvt-spacing-32) var(--rvt-spacing-32) var(--rvt-spacing-40); }
+    .callout > img { width: 64px; height: 64px; }
+    .callout-body { flex: none; max-width: none; padding-top: 0; }
+    .callout-body .actions-row { flex-direction: column; align-items: flex-start; }
+    /* Text essay, one column: spacing/64 top, 24px sides; 64px sticker spacing/20 below;
+       title spacing/40 below; buttons spacing/40 above. */
+    .essay .wrap { padding: var(--rvt-spacing-64) var(--gutter) 0; }
+    .essay-inner > img { width: 64px; height: 64px; margin-bottom: var(--rvt-spacing-20); }
+    .essay-inner h2 { padding-bottom: var(--rvt-spacing-40); }
+    .essay-inner .actions-row { padding-top: var(--rvt-spacing-40); }
+    .image-hub .wrap { padding-top: var(--section-y); }
+    /* Quote, Impact: icon 53 × 40, spacing/32 (24px) gap. */
+    .quote .wrap { padding: var(--section-y) var(--gutter); }
+    .quote-mark { width: 53px; height: 40px; }
+    /* List hub items: spacing/16 top and bottom, 0 sides. */
+    .list-hub a { padding: var(--rvt-spacing-16) 0; }
+    /* Footer: social row and legal links stack inside a bottom bar. */
+    .footer-social { gap: var(--rvt-spacing-12); padding: var(--rvt-spacing-16) var(--gutter) var(--rvt-spacing-8); }
+    .footer-legal { flex-direction: column-reverse; align-items: flex-start; gap: var(--rvt-spacing-20); padding: var(--rvt-spacing-8) var(--gutter) var(--rvt-spacing-16); }
+    .footer-legal ul { flex-direction: column; gap: var(--rvt-spacing-8); }
   }
   @media (prefers-reduced-motion: reduce) {
-    #sidenav, #search-panel { transition: none; }
+    #sidenav, #search-panel, .rvt-link, .rvt-link .icon, .tool-btn, .list-compact a, .list-compact .arrow-box,
+    .list-hub a, .list-hub .arrow-box, .footer-social a, .footer-legal a, .search-go { transition: none; }
   }
 </style>
 </head>
@@ -478,9 +668,8 @@
     </a>
     <div class="header-tools">
       <div class="header-ctas">
-        <a class="cta-sm" data-nav href="#/admissions"><span class="t-action-sm">Apply now</span><span class="icon-12" data-icon="arrow-right-12"></span></a>
-        <!-- Label is verbatim from Figma ("Vist campus"). -->
-        <a class="cta-sm" data-nav href="#/visit-campus"><span class="t-action-sm">Vist campus</span><span class="icon-12" data-icon="arrow-right-12"></span></a>
+        <a class="rvt-link rvt-link--md" data-nav href="#/admissions">Apply now<span class="icon-12" data-icon="arrow-right-12"></span></a>
+        <a class="rvt-link rvt-link--md" data-nav href="#/visit-campus">Visit campus<span class="icon-12" data-icon="arrow-right-12"></span></a>
       </div>
       <button type="button" id="search-toggle" class="tool-btn" aria-expanded="false" aria-controls="search-panel">
         <span class="sr-only">Search</span>
@@ -498,9 +687,9 @@
     <div class="search-inner">
       <form class="search-form" id="site-search-form" action="">
         <label for="site-search" class="sr-only">Search this site</label>
-        <span class="icon c-strong" data-icon="magnifying-glass"></span>
-        <input id="site-search" name="search" type="search" placeholder="Search this site" class="t-body-sm">
-        <button type="submit" class="search-go t-action-sm">Go</button>
+        <span class="icon" data-icon="magnifying-glass" style="color: var(--rvt-icon-strong)"></span>
+        <input id="site-search" name="search" type="search" placeholder="Search this site">
+        <button type="submit" class="search-go">Go</button>
       </form>
     </div>
   </div>
@@ -517,12 +706,12 @@
     <footer class="site-footer">
       <div class="rvt-footer">
         <div class="footer-social">
-          <a href="#/" aria-label="Bluesky"><img src="assets/social-bluesky.svg" alt="" width="12" height="12"></a>
-          <a href="#/" aria-label="Facebook"><img src="assets/social-facebook.svg" alt="" width="12" height="12"></a>
-          <a href="#/" aria-label="Instagram"><img src="assets/social-instagram.svg" alt="" width="12" height="12"></a>
-          <a href="#/" aria-label="LinkedIn"><img src="assets/social-linkedin.svg" alt="" width="12" height="12"></a>
-          <a href="#/" aria-label="YouTube"><img src="assets/social-youtube.svg" alt="" width="12" height="12"></a>
-          <a href="#/" aria-label="X"><img src="assets/social-x.svg" alt="" width="12" height="12"></a>
+          <a href="#/" aria-label="Bluesky"><span style="--i: url(assets/social-bluesky.svg)"></span></a>
+          <a href="#/" aria-label="Facebook"><span style="--i: url(assets/social-facebook.svg)"></span></a>
+          <a href="#/" aria-label="Instagram"><span style="--i: url(assets/social-instagram.svg)"></span></a>
+          <a href="#/" aria-label="LinkedIn"><span style="--i: url(assets/social-linkedin.svg)"></span></a>
+          <a href="#/" aria-label="YouTube"><span style="--i: url(assets/social-youtube.svg)"></span></a>
+          <a href="#/" aria-label="X"><span style="--i: url(assets/social-x.svg)"></span></a>
         </div>
         <div class="footer-legal">
           <img src="assets/trident.svg" alt="" width="22" height="28">
@@ -540,17 +729,17 @@
 </div>
 
 <!-- =========================================================================
-     HOMEPAGE (Figma "Index Page" 12:11195). Copy is verbatim from Figma.
+     HOMEPAGE (Figma "Index Page" 12:11195). Copy is from Figma, typos fixed.
      ========================================================================= -->
 <template id="tpl-home">
-  <section class="hero">
+  <section class="hero rvt-theme-crimson">
     <div class="wrap">
       <div class="hero-text">
-        <h1 class="t-display-xl">never daunted</h1>
+        <h1 class="t-display-xl-caps">never daunted</h1>
         <p class="hero-intro t-body-md">Indiana’s flagship campus, where discovery happens in every field, from genomics to the arts to AI.</p>
       </div>
       <div class="hero-media">
-        <img class="rvt-image ratio-2-1" src="assets/hero.jpg" alt="" width="1244" height="622">
+        <img src="assets/hero.jpg" alt="" width="1244" height="622">
         <div class="hero-card">
           <img src="assets/symbol-iu.svg" alt="" width="48" height="48">
           <p class="t-action-lg">IU Football’s championship drive goes beyond sports. You’ll find it all across IU Bloomington, in classrooms, labs, studios, and communities worldwide.</p>
@@ -559,7 +748,7 @@
     </div>
   </section>
 
-  <section class="stat" aria-label="IU Bloomington by the numbers">
+  <section class="stat rvt-theme-crimson" aria-label="IU Bloomington by the numbers">
     <div class="stat-row">
       <div class="wrap">
         <div class="stat-item">
@@ -587,38 +776,35 @@
     <div class="wrap">
       <div class="section-head">
         <div class="section-head-text">
-          <p class="eyebrow t-tag-sm-caps c-brand">Academics</p>
-          <h2 class="t-display-md c-brand">Learn without limits. Lead with purpose.</h2>
-          <p class="t-body-md">Home to the nation’s #1 public affairs school and top-ranked business and arts programs, IU lets you learn from world-class faculty and take on challenges that matter.</p>
+          <p class="eyebrow t-tag-sm-caps">Academics</p>
+          <h2 class="t-display-md">Learn without limits. Lead with purpose.</h2>
+          <p class="t-body-base">Home to the nation’s #1 public affairs school and top-ranked business and arts programs, IU lets you learn from world-class faculty and take on challenges that matter.</p>
         </div>
         <div class="section-actions">
-          <a class="rvt-link" data-nav href="#/academics"><span class="t-action-lg">Explore our programs</span><span class="icon" data-icon="arrow-right"></span></a>
+          <a class="rvt-link" data-nav href="#/academics">Explore our programs<span class="icon" data-icon="arrow-right"></span></a>
         </div>
       </div>
       <div class="card-row">
         <article class="card-feature">
-          <img class="rvt-image ratio-3-2" src="assets/intro-1.jpg" alt="" width="776" height="518">
-          <div class="card-feature-body">
-            <h3 class="t-display-xs"><a data-nav href="#/degrees-majors">Explore programs by interest</a></h3>
-            <p class="t-body-sm">Browse nationally recognized majors and degrees by interest and find the one that fits you.</p>
+          <div class="card-feature__media"><img src="assets/intro-1.jpg" alt=""></div>
+          <div class="card-feature__body">
+            <h3 class="card-feature__title t-display-xs"><a class="card-feature__link" data-nav href="#/degrees-majors"><span class="card-feature__link-text">Explore programs by interest</span><span class="card-feature__arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span></a></h3>
+            <p class="card-feature__desc t-body-sm">Browse nationally recognized majors and degrees by interest and find the one that fits you.</p>
           </div>
-          <span class="card-arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span>
         </article>
         <article class="card-feature">
-          <img class="rvt-image ratio-3-2" src="assets/intro-2.jpg" alt="" width="776" height="518">
-          <div class="card-feature-body">
-            <h3 class="t-display-xs"><a data-nav href="#/academics">Explore academics at IU</a></h3>
-            <p class="t-body-sm">See how a liberal arts foundation teaches you to think critically and solve problems in any career.</p>
+          <div class="card-feature__media"><img src="assets/intro-2.jpg" alt=""></div>
+          <div class="card-feature__body">
+            <h3 class="card-feature__title t-display-xs"><a class="card-feature__link" data-nav href="#/academics"><span class="card-feature__link-text">Explore academics at IU</span><span class="card-feature__arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span></a></h3>
+            <p class="card-feature__desc t-body-sm">See how a liberal arts foundation teaches you to think critically and solve problems in any career.</p>
           </div>
-          <span class="card-arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span>
         </article>
         <article class="card-feature">
-          <img class="rvt-image ratio-3-2" src="assets/intro-3.jpg" alt="" width="776" height="518">
-          <div class="card-feature-body">
-            <h3 class="t-display-xs"><a data-nav href="#/undergraduate-research">Find research opportunities</a></h3>
-            <p class="t-body-sm">Work alongside faculty on research that gets real results, from new medical treatments to new technology.</p>
+          <div class="card-feature__media"><img src="assets/intro-3.jpg" alt=""></div>
+          <div class="card-feature__body">
+            <h3 class="card-feature__title t-display-xs"><a class="card-feature__link" data-nav href="#/undergraduate-research"><span class="card-feature__link-text">Find research opportunities</span><span class="card-feature__arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span></a></h3>
+            <p class="card-feature__desc t-body-sm">Work alongside faculty on research that gets real results, from new medical treatments to new technology.</p>
           </div>
-          <span class="card-arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span>
         </article>
       </div>
     </div>
@@ -633,8 +819,8 @@
           <h2 class="t-display-xs">Your IU story begins here</h2>
           <p class="t-body-sm">Ready to see where your future takes you? Apply now, or request info to learn more about IU.</p>
           <div class="actions-row">
-            <a class="rvt-link" data-nav href="#/admissions"><span class="t-action-lg">Apply now</span><span class="icon" data-icon="arrow-right"></span></a>
-            <a class="rvt-link" data-nav href="#/admissions"><span class="t-action-lg">Request Info</span><span class="icon" data-icon="arrow-right"></span></a>
+            <a class="rvt-link" data-nav href="#/admissions">Apply now<span class="icon" data-icon="arrow-right"></span></a>
+            <a class="rvt-link" data-nav href="#/admissions">Request info<span class="icon" data-icon="arrow-right"></span></a>
           </div>
         </div>
       </div>
@@ -642,19 +828,23 @@
   </section>
 
   <section class="billboard-band">
-    <div class="wrap">
+    <div class="wrap billboard-wrap">
       <div class="billboard">
-        <div class="billboard-media">
-          <img class="rvt-image ratio-1-1" src="assets/billboard.jpg" alt="" width="900" height="900">
+        <div class="billboard__media">
+          <img src="assets/billboard.jpg" alt="" width="900" height="900">
         </div>
-        <div class="billboard-body">
-          <p class="t-tag-sm-caps c-brand">Research</p>
-          <h2 class="t-display-xs c-brand">A research university at full power</h2>
-          <p class="t-body-sm">At IU, research doesn't stay in the lab. It improves patient care, advances technology, and shapes policy—solving real problems and driving growth across Indiana and beyond.</p>
-          <ul class="list-hub-sm">
-            <li><a class="t-action-lg" data-nav href="#/research"><span class="arrow-box"><span class="icon-12" data-icon="arrow-right-12"></span></span><span>Explore IU research</span></a></li>
-            <li><a class="t-action-lg" data-nav href="#/undergraduate-research"><span class="arrow-box"><span class="icon-12" data-icon="arrow-right-12"></span></span><span>Find student research opportunities</span></a></li>
-          </ul>
+        <div class="billboard__content">
+          <div class="billboard__text">
+            <p class="billboard__eyebrow t-tag-sm-caps">Research</p>
+            <h2 class="billboard__title t-display-xs">A research university at full power</h2>
+            <p class="billboard__desc t-body-sm">At IU, research doesn't stay in the lab. It improves patient care, advances technology, and shapes policy—solving real problems and driving growth across Indiana and beyond.</p>
+          </div>
+          <div class="billboard__actions">
+            <ul class="list-compact">
+              <li><a data-nav href="#/research"><span class="arrow-box"><span class="icon-12" data-icon="arrow-right-12"></span></span><span class="label">Explore IU research</span></a></li>
+              <li><a data-nav href="#/undergraduate-research"><span class="arrow-box"><span class="icon-12" data-icon="arrow-right-12"></span></span><span class="label">Find student research opportunities</span></a></li>
+            </ul>
+          </div>
         </div>
       </div>
     </div>
@@ -664,81 +854,82 @@
     <div class="wrap">
       <div class="section-head">
         <div class="section-head-text">
-          <h2 class="t-display-md c-brand">Explore research news</h2>
+          <h2 class="t-display-md">Explore research news</h2>
         </div>
         <div class="section-actions">
-          <a class="rvt-link" href="#/"><span class="t-action-lg">All campus news</span><span class="icon" data-icon="arrow-up-right"></span></a>
+          <a class="rvt-link" href="#/">All campus news<span class="icon" data-icon="arrow-up-right"></span></a>
         </div>
       </div>
       <div class="card-row">
         <article class="card-news">
           <div>
-            <img class="rvt-image ratio-3-2" src="assets/news-1.jpg" alt="" width="648" height="432">
-            <span class="tag t-tag-sm">Science and Technology</span>
-            <div class="card-news-title">
-              <h3 class="t-editorial-sm"><a href="#/">IU researcher investigating a key barrier to curing HIV</a></h3>
-              <span class="icon" data-icon="arrow-up-right"></span>
+            <div class="card-news__media"><img src="assets/news-1.jpg" alt=""></div>
+            <span class="card-news__meta t-tag-sm">Science and Technology</span>
+            <div class="card-news__head">
+              <h3 class="card-news__title t-editorial-sm"><a class="card-news__link" href="#/"><span class="card-news__link-text">IU researcher investigating a key barrier to curing HIV</span></a></h3>
+              <span class="icon" data-icon="arrow-up-right" aria-hidden="true"></span>
             </div>
           </div>
-          <time class="t-tag-sm">Sept. 28, 2026</time>
+          <p class="card-news__bottom t-tag-sm">Sept. 28, 2026</p>
         </article>
         <article class="card-news">
           <div>
-            <img class="rvt-image ratio-3-2" src="assets/news-2.jpg" alt="" width="648" height="432">
-            <!-- Label is verbatim from Figma ("Science and Technolog"). -->
-            <span class="tag t-tag-sm">Science and Technolog</span>
-            <div class="card-news-title">
-              <h3 class="t-editorial-sm"><a href="#/">As AI transforms science and research, IU cybersecurity experts protect against hidden risks</a></h3>
-              <span class="icon" data-icon="arrow-up-right"></span>
+            <div class="card-news__media"><img src="assets/news-2.jpg" alt=""></div>
+            <span class="card-news__meta t-tag-sm">Science and Technology</span>
+            <div class="card-news__head">
+              <h3 class="card-news__title t-editorial-sm"><a class="card-news__link" href="#/"><span class="card-news__link-text">As AI transforms science and research, IU cybersecurity experts protect against hidden risks</span></a></h3>
+              <span class="icon" data-icon="arrow-up-right" aria-hidden="true"></span>
             </div>
           </div>
-          <time class="t-tag-sm">Sept. 22, 2026</time>
+          <p class="card-news__bottom t-tag-sm">Sept. 22, 2026</p>
         </article>
         <article class="card-news">
           <div>
-            <img class="rvt-image ratio-3-2" src="assets/news-3.jpg" alt="" width="648" height="432">
-            <span class="tag t-tag-sm">Health and Wellness</span>
-            <div class="card-news-title">
-              <h3 class="t-editorial-sm"><a href="#/">NIH funds groundbreaking heat stress research at School of Public Health-Bloomington</a></h3>
-              <span class="icon" data-icon="arrow-up-right"></span>
+            <div class="card-news__media"><img src="assets/news-3.jpg" alt=""></div>
+            <span class="card-news__meta t-tag-sm">Health and Wellness</span>
+            <div class="card-news__head">
+              <h3 class="card-news__title t-editorial-sm"><a class="card-news__link" href="#/"><span class="card-news__link-text">NIH funds groundbreaking heat stress research at School of Public Health-Bloomington</span></a></h3>
+              <span class="icon" data-icon="arrow-up-right" aria-hidden="true"></span>
             </div>
           </div>
-          <time class="t-tag-sm">Sept. 1, 2026</time>
+          <p class="card-news__bottom t-tag-sm">Sept. 1, 2026</p>
         </article>
       </div>
     </div>
   </section>
 
-  <section class="essay theme-crimson">
+  <section class="essay rvt-theme-crimson">
     <div class="wrap">
       <div class="essay-inner">
-        <img src="assets/indiana-state.svg" alt="" width="95" height="96">
+        <img src="assets/indiana-state.svg" alt="" width="96" height="96">
         <p class="eyebrow t-tag-md-caps">Experiential learning</p>
         <h2 class="t-display-lg">Real-world experience that leads to real careers</h2>
         <p class="t-body-xl">Turn what you learn into what you can do. Internships, community projects, and study abroad let you apply your skills, explore careers, and build confidence.</p>
         <div class="actions-row">
-          <a class="rvt-link" data-nav href="#/academics"><span class="t-action-lg">Go beyond the classroom</span><span class="icon" data-icon="arrow-right"></span></a>
+          <a class="rvt-link" data-nav href="#/academics">Go beyond the classroom<span class="icon" data-icon="arrow-right"></span></a>
         </div>
       </div>
     </div>
   </section>
 
-  <section class="image-hub theme-crimson">
+  <section class="image-hub rvt-theme-crimson">
     <div class="wrap">
       <figure>
-        <img class="rvt-image ratio-2-1" src="assets/hub-main.jpg" alt="" width="1244" height="622">
-        <div class="image-hub-secondary">
-          <img class="rvt-image ratio-1-1" src="assets/hub-2.jpg" alt="" width="618" height="618">
-          <img class="rvt-image ratio-1-1" src="assets/hub-3.jpg" alt="" width="618" height="618">
+        <img class="image-hub__main" src="assets/hub-main.jpg" alt="" width="1244" height="622">
+        <div class="image-hub__secondary">
+          <img src="assets/hub-2.jpg" alt="" width="618" height="618">
+          <img src="assets/hub-3.jpg" alt="" width="618" height="618">
         </div>
         <figcaption class="t-tag-md">IU students learn beyond the classroom, from D.C. to small-town Indiana to Greece.</figcaption>
       </figure>
     </div>
   </section>
 
-  <section class="quote theme-crimson">
+  <section class="quote rvt-theme-crimson">
     <div class="wrap">
-      <div class="quote-mark"><img src="assets/quote.svg" alt="" width="89" height="66"></div>
+      <div class="quote-mark" aria-hidden="true">
+        <svg viewBox="0 0 85 64" fill="none" stroke="currentColor" stroke-width="2"><path d="M11.886 0H33.83l-6.4 29.388h9.143V64H0V29.388L11.886 0Z"/><path d="M60.648 0h21.943l-6.4 29.388h9.143V64H48.762V29.388L60.648 0Z"/></svg>
+      </div>
       <blockquote class="t-editorial-xl">IU has helped me connect my interests in science and society in ways I never expected. I know I’m being prepared to make a difference.</blockquote>
       <div>
         <p class="t-body-sm-strong">Eva Guzman</p>
@@ -751,35 +942,32 @@
     <div class="wrap">
       <div class="section-head">
         <div class="section-head-text">
-          <p class="eyebrow t-tag-sm-caps c-brand">Campus life</p>
-          <h2 class="t-display-md c-brand">The quintessential college experience</h2>
-          <p class="t-body-md">When you walk through the Sample Gates, you join a community with over 200 years of Hoosier tradition on a Big Ten campus built for connection and discovery.</p>
+          <p class="eyebrow t-tag-sm-caps">Campus life</p>
+          <h2 class="t-display-md">The quintessential college experience</h2>
+          <p class="t-body-base">When you walk through the Sample Gates, you join a community with over 200 years of Hoosier tradition on a Big Ten campus built for connection and discovery.</p>
         </div>
       </div>
       <div class="card-row">
         <article class="card-feature">
-          <img class="rvt-image ratio-3-2" src="assets/campus-1.jpg" alt="" width="734" height="489">
-          <div class="card-feature-body">
-            <h3 class="t-display-xs"><a data-nav href="#/visit-campus">Visit campus</a></h3>
-            <p class="t-body-sm">Tour one of the most beautiful campuses in the country, in person or online.</p>
+          <div class="card-feature__media"><img src="assets/campus-1.jpg" alt=""></div>
+          <div class="card-feature__body">
+            <h3 class="card-feature__title t-display-xs"><a class="card-feature__link" data-nav href="#/visit-campus"><span class="card-feature__link-text">Visit campus</span><span class="card-feature__arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span></a></h3>
+            <p class="card-feature__desc t-body-sm">Tour one of the most beautiful campuses in the country, in person or online.</p>
           </div>
-          <span class="card-arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span>
         </article>
         <article class="card-feature">
-          <img class="rvt-image ratio-3-2" src="assets/campus-2.jpg" alt="" width="734" height="489">
-          <div class="card-feature-body">
-            <h3 class="t-display-xs"><a data-nav href="#/campus-life">Student life</a></h3>
-            <p class="t-body-sm">Big campus. Tight-knit community. Find the clubs and traditions that fit you.</p>
+          <div class="card-feature__media"><img src="assets/campus-2.jpg" alt=""></div>
+          <div class="card-feature__body">
+            <h3 class="card-feature__title t-display-xs"><a class="card-feature__link" data-nav href="#/campus-life"><span class="card-feature__link-text">Student life</span><span class="card-feature__arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span></a></h3>
+            <p class="card-feature__desc t-body-sm">Big campus. Tight-knit community. Find the clubs and traditions that fit you.</p>
           </div>
-          <span class="card-arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span>
         </article>
         <article class="card-feature">
-          <img class="rvt-image ratio-3-2" src="assets/campus-3.jpg" alt="" width="734" height="489">
-          <div class="card-feature-body">
-            <h3 class="t-display-xs"><a data-nav href="#/bloomington">Life in Bloomington</a></h3>
-            <p class="t-body-sm">A true college town, right outside the Sample Gates.</p>
+          <div class="card-feature__media"><img src="assets/campus-3.jpg" alt=""></div>
+          <div class="card-feature__body">
+            <h3 class="card-feature__title t-display-xs"><a class="card-feature__link" data-nav href="#/bloomington"><span class="card-feature__link-text">Life in Bloomington</span><span class="card-feature__arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span></a></h3>
+            <p class="card-feature__desc t-body-sm">A true college town, right outside the Sample Gates.</p>
           </div>
-          <span class="card-arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span>
         </article>
       </div>
     </div>
@@ -788,14 +976,14 @@
   <section class="quick-links">
     <div class="wrap">
       <div>
-        <h2 class="t-display-md c-brand">Explore IU Bloomington</h2>
+        <h2 class="t-display-md">Explore IU Bloomington</h2>
         <p class="t-body-md">Discover campus housing and dining, navigate with interactive maps, access student support, and learn about IU’s history and leadership.</p>
       </div>
       <ul class="list-hub">
-        <li><a class="t-action-xl" data-nav href="#/housing-dining"><span class="arrow-box"><span class="icon" data-icon="arrow-right"></span></span><span>Housing &amp; dining</span></a></li>
-        <li><a class="t-action-xl" data-nav href="#/campus-life"><span class="arrow-box"><span class="icon" data-icon="arrow-right"></span></span><span>Campus &amp; navigation</span></a></li>
-        <li><a class="t-action-xl" data-nav href="#/student-support"><span class="arrow-box"><span class="icon" data-icon="arrow-right"></span></span><span>Student &amp; academic support</span></a></li>
-        <li><a class="t-action-xl" data-nav href="#/about"><span class="arrow-box"><span class="icon" data-icon="arrow-right"></span></span><span>About IU Bloomington</span></a></li>
+        <li><a data-nav href="#/housing-dining"><span class="arrow-box"><span class="icon" data-icon="arrow-right"></span></span><span class="label">Housing &amp; dining</span></a></li>
+        <li><a data-nav href="#/campus-life"><span class="arrow-box"><span class="icon" data-icon="arrow-right"></span></span><span class="label">Campus &amp; navigation</span></a></li>
+        <li><a data-nav href="#/student-support"><span class="arrow-box"><span class="icon" data-icon="arrow-right"></span></span><span class="label">Student &amp; academic support</span></a></li>
+        <li><a data-nav href="#/about"><span class="arrow-box"><span class="icon" data-icon="arrow-right"></span></span><span class="label">About IU Bloomington</span></a></li>
       </ul>
     </div>
   </section>
@@ -972,14 +1160,14 @@
   function renderInterior(slug, p) {
     const parent = PAGES[p.p];
     const kids = p.c.map((s) =>
-      `<li><a class="t-action-lg" data-nav href="${href(s)}"><span class="arrow-box"><span class="icon-12" data-icon="arrow-right-12"></span></span><span>${esc(PAGES[s].l)}</span></a></li>`
+      `<li><a data-nav href="${href(s)}"><span class="arrow-box"><span class="icon-12" data-icon="arrow-right-12"></span></span><span class="label">${esc(PAGES[s].l)}</span></a></li>`
     ).join('');
     return (
       `<section class="interior"><div class="wrap">` +
-      (parent && p.p !== HOME ? `<p class="eyebrow t-tag-sm-caps c-brand">${esc(parent.l)}</p>` : '') +
-      `<h1 class="t-display-md c-brand">${esc(p.l)}</h1>` +
-      `<p class="t-body-md">Placeholder page. The design for this page has not been built yet.</p>` +
-      (kids ? `<ul class="list-hub-sm child-links">${kids}</ul>` : '') +
+      (parent && p.p !== HOME ? `<p class="eyebrow t-tag-sm-caps">${esc(parent.l)}</p>` : '') +
+      `<h1 class="t-display-md">${esc(p.l)}</h1>` +
+      `<p class="t-body-base">Placeholder page. The design for this page has not been built yet.</p>` +
+      (kids ? `<ul class="list-compact">${kids}</ul>` : '') +
       `</div></section>`
     );
   }

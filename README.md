@@ -3,6 +3,7 @@
 Rivet sidebar navigation prototype for IU Bloomington. One self-contained page (`index.html`) plus an `assets/` folder. No build step.
 
 - **Design:** Figma "Sidebar Designs" → Homepage frame
+- **Components:** Rivet 3 Component Guide (spacing, type, hovers); tokens in `assets/rivet-tokens.css` are a copy of the guide's generated file
 - **Sidebar behavior:** ported from `prototype-hub/v1.1/sidebar-v2-children`
 - **Live:** https://manselldesign.github.io/navigation-test-bloomington/
 

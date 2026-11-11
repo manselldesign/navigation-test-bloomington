@@ -375,7 +375,7 @@
      rvt-callout, Strong, Left (Callout page + built example)
      background/strong, spacing/80 padding, 80px sticker, spacing/32 to the text
      column (max 850px, spacing/8 above). Eyebrow tag/sm/caps spacing/8 below;
-     title display/xs/strong; description body/sm/regular text/brand, spacing/20
+     title display/xs/strong; description body/sm/regular text/brand, spacing/16
      above; links Normal XL, spacing/32 above, spacing/16 apart.
      ========================================================================= */
   .callout-band .wrap { padding: 0 var(--gutter) var(--section-y); }
@@ -384,31 +384,33 @@
   .callout > img { width: 80px; height: 80px; flex: none; }
   .callout-body { flex: 1 1 0; min-width: 0; max-width: 850px; padding-top: var(--rvt-spacing-8); overflow-wrap: break-word; }
   .callout-body .t-tag-sm-caps { padding: 0 0 var(--rvt-spacing-8) 2px; }
-  .callout-body .t-body-sm { padding-top: var(--rvt-spacing-20); }
+  .callout-body .t-body-sm { padding-top: var(--rvt-spacing-16); }
   .callout-body .actions-row { padding-top: var(--rvt-spacing-32); }
 
   /* =========================================================================
      rvt-billboard, one image + list of links (Billboard page + built example)
-     Side by side when the billboard is 800px wide or more: image column 66%,
-     content at least 280px, spacing/32 between, content bottom-aligned.
+     Side by side when the billboard is 800px wide or more: image and content
+     columns split 824 : 544 (800px image at 1400px), content at least 280px,
+     spacing/32 between, content bottom-aligned.
      Image 1:1, spacing/24 top, bottom and outer side, cropped from the top centre.
-     Content spacing/48 outer side and bottom (spacing/32 under 1100px wide).
+     Content spacing/48 top, outer side and bottom (spacing/32 under 1100px wide).
+     No fixed height: the row grows to the taller column, so text never runs past the top.
      Eyebrow spacing/8 below, description spacing/16 above, links spacing/32 above.
      Stacked under 800px: image 3:2 full width, spacing/20 top and sides; text and
      links inside one spacing/32 (24px) frame; Mobile type sizes.
      ========================================================================= */
   .billboard-band .wrap { padding: 0 var(--gutter); }
   .billboard-wrap { container-type: inline-size; }
-  .billboard { display: grid; grid-template-columns: minmax(0, 66%) minmax(280px, 1fr); column-gap: var(--rvt-spacing-32); align-items: end; background: var(--rvt-background-strong); }
+  .billboard { display: grid; grid-template-columns: minmax(0, 824fr) minmax(280px, 544fr); column-gap: var(--rvt-spacing-32); align-items: end; background: var(--rvt-background-strong); }
   .billboard__media { padding: var(--rvt-spacing-24) 0 var(--rvt-spacing-24) var(--rvt-spacing-24); }
-  .billboard__media img { width: 100%; max-width: 900px; height: auto; aspect-ratio: 1 / 1; object-fit: cover; object-position: var(--rvt-image-focus, 50% 0%); }
-  .billboard__content { min-width: 0; padding: 0 var(--rvt-spacing-48) var(--rvt-spacing-48) 0; overflow-wrap: break-word; }
+  .billboard__media img { width: 100%; max-width: 800px; height: auto; aspect-ratio: 1 / 1; object-fit: cover; object-position: var(--rvt-image-focus, 50% 0%); }
+  .billboard__content { min-width: 0; padding: var(--rvt-spacing-48) var(--rvt-spacing-48) var(--rvt-spacing-48) 0; overflow-wrap: break-word; }
   .billboard__eyebrow { padding: 0 0 var(--rvt-spacing-8) 2px; color: var(--rvt-text-brand); }
   .billboard__title { color: var(--rvt-text-brand); }
   .billboard__desc { padding-top: var(--rvt-spacing-16); color: var(--rvt-text-default); }
   .billboard__actions { padding-top: var(--rvt-spacing-32); }
   @container (max-width: 1099px) {
-    .billboard__content { padding: 0 var(--rvt-spacing-32) var(--rvt-spacing-32) 0; }
+    .billboard__content { padding: var(--rvt-spacing-32) var(--rvt-spacing-32) var(--rvt-spacing-32) 0; }
   }
   @container (max-width: 799px) {
     .billboard { display: flex; flex-direction: column; align-items: stretch;

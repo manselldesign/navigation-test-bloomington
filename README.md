@@ -21,7 +21,7 @@ Rivet sidebar navigation prototype for IU Bloomington. One self-contained page (
 
 - Header spans the full window. The sidebar (260px) stays locked to the left under it.
 - Each section's background fills the space to the right of the sidebar; its contents stop at 1340px and center in that space.
-- Photos never grow past their Figma size (hero and image hub 1244px, billboard 900px).
+- Photos never grow past their Figma size (hero and image hub 1244px, billboard 800px).
 - The footer fills the full width to the right of the sidebar.
 
 ## Placeholders to replace

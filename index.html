@@ -1,0 +1,1173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Indiana University Bloomington</title>
+
+<!--
+  ===========================================================================
+  Navigation Test Bloomington — Rivet sidebar navigation prototype
+  Single-file, no-build prototype: HTML + CSS + vanilla JS with a hash router
+  (home is #/).
+
+  WHERE EVERYTHING CAME FROM
+  --------------------------
+  Visual spec : Figma "Sidebar Designs" (file aNuo3VFJJcb2ca1umElvkI), frame
+                "Homepage" 5:12499. Tokens, type, spacing and colors below are
+                the values from that frame.
+  Behavior    : prototype-hub/v1.1/sidebar-v2-children. The sidebar model
+                (navModel / renderSidenav / mobile drill) is ported from it.
+  Assets      : assets/ — stickers and icons are SVG exports of the Figma
+                layers; photos are renders of the Figma image slots.
+
+  WHERE TO EDIT
+  -------------
+  IA            : the `IA` array in the script at the bottom of this file.
+  Homepage copy : <template id="tpl-home">.
+  SIDENAV_BREAKPOINT : 1024px, the desktop / mobile split. It appears in the
+                script and in the two `1024px` / `1023.98px` media queries.
+  CONTENT_MAX   : --content-max (1340px, the Figma main-content frame).
+  ===========================================================================
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@200..900&family=Roboto+Flex:opsz,slnt,wdth,wght@8..144,-10..0,25..151,100..1000&family=Roboto+Mono:wght@300..700&display=swap">
+
+<style>
+  /* =========================================================================
+     TOKENS (Figma variables, Light theme unless noted)
+     ========================================================================= */
+  :root {
+    --rvt-crimson: #990000;
+    --rvt-crimson-dark: #6d0808;
+    --rvt-crimson-border: #510606;      /* border/default on the Crimson theme */
+    --rvt-text-strong: #1f2528;
+    --rvt-text-default: #343c42;
+    --rvt-border: #edddc4;              /* border/default */
+    --rvt-bg-strong: #faf6ef;           /* background/strong */
+    --rvt-white: #ffffff;
+
+    --font-sans: 'Roboto Flex', system-ui, sans-serif;
+    --font-mono: 'Roboto Mono', ui-monospace, monospace;
+    --font-serif: 'Crimson Pro', Georgia, serif;
+
+    --sidenav-width: 260px;
+    --sidenav-pad: 24px;
+    --content-max: 1340px;              /* Figma main-content frame */
+    --gutter: 48px;                     /* section side padding */
+    --chrome-h: 69px;                   /* live header height, set from JS */
+    --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    color: var(--rvt-text-default);
+    font-family: var(--font-sans);
+    font-size: 16px;
+    line-height: 24px;
+    font-variation-settings: 'wght' 350, 'wdth' 100;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, p, ul, figure, blockquote { margin: 0; padding: 0; }
+  /* The Figma copy never leaves a single word on the last line; `pretty` does the same. */
+  body { text-wrap: pretty; }
+  ul { list-style: none; }
+  a { color: inherit; text-decoration: none; }
+  button { font: inherit; color: inherit; }
+  img, svg { display: block; }
+  img { max-width: 100%; }
+  .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  :focus-visible { outline: 2px solid var(--rvt-crimson-dark); outline-offset: 2px; }
+  .theme-crimson :focus-visible { outline-color: #fff; }
+  .icon { flex: none; width: 16px; height: 16px; }
+  .icon-12 { flex: none; width: 12px; height: 12px; }
+  .icon svg, .icon-12 svg { width: 100%; height: 100%; fill: currentColor; }
+
+  .skip-link { position: absolute; left: -9999px; top: 0; z-index: 100; background: var(--rvt-text-strong); color: #fff; padding: 12px 16px; }
+  .skip-link:focus { left: 0; }
+
+  /* =========================================================================
+     NAMED TEXT STYLES (Figma text styles)
+     Sizes written "a-b" in Figma are mobile-desktop; they switch at 1024px.
+     ========================================================================= */
+  .t-display-xl   { font-size: 36px; line-height: 40px; font-variation-settings: 'wght' 825, 'wdth' 100, 'slnt' -10; text-transform: uppercase; }
+  .t-display-lg   { font-size: 29px; line-height: 32px; font-variation-settings: 'wght' 700, 'wdth' 100; }
+  .t-display-md   { font-size: 26px; line-height: 28px; font-variation-settings: 'wght' 700, 'wdth' 100; }
+  .t-display-xs   { font-size: 26px; line-height: 32px; font-variation-settings: 'wght' 700, 'wdth' 100; }
+  .t-body-xl      { font-size: 23px; line-height: 32px; font-variation-settings: 'wght' 350, 'wdth' 100; }
+  .t-body-md      { font-size: 18px; line-height: 28px; font-variation-settings: 'wght' 350, 'wdth' 110; }
+  .t-body-base    { font-size: 16px; line-height: 28px; font-variation-settings: 'wght' 350, 'wdth' 100; }
+  .t-body-sm      { font-size: 16px; line-height: 24px; font-variation-settings: 'wght' 350, 'wdth' 100; }
+  .t-body-sm-strong { font-size: 16px; line-height: 24px; font-variation-settings: 'wght' 600, 'wdth' 100; }
+  .t-action-xl    { font-size: 20px; line-height: 24px; font-variation-settings: 'wght' 600, 'wdth' 100; }
+  .t-action-lg    { font-size: 16px; line-height: 24px; font-variation-settings: 'wght' 600, 'wdth' 100; }
+  .t-action-sm    { font-size: 14px; line-height: 20px; font-variation-settings: 'wght' 600, 'wdth' 100; }
+  .t-action-sm-regular { font-size: 14px; line-height: 20px; font-variation-settings: 'wght' 350, 'wdth' 100; }
+  .t-number       { font-size: 42px; line-height: 44px; font-variation-settings: 'wght' 825, 'wdth' 150; text-box: trim-both cap alphabetic; }
+  .t-editorial-xl { font-family: var(--font-serif); font-weight: 350; font-size: 36px; line-height: 40px; font-variation-settings: normal; }
+  .t-editorial-sm { font-family: var(--font-serif); font-weight: 350; font-size: 20px; line-height: 24px; font-variation-settings: normal; }
+  .t-tag-lg       { font-family: var(--font-mono); font-weight: 350; font-size: 16px; line-height: 24px; letter-spacing: 1px; font-variation-settings: normal; }
+  .t-tag-md       { font-family: var(--font-mono); font-weight: 350; font-size: 14px; line-height: 20px; letter-spacing: 1px; font-variation-settings: normal; }
+  .t-tag-md-caps  { font-family: var(--font-mono); font-weight: 350; font-size: 14px; line-height: 20px; letter-spacing: 2px; text-transform: uppercase; font-variation-settings: normal; }
+  .t-tag-sm       { font-family: var(--font-mono); font-weight: 350; font-size: 12px; line-height: 16px; letter-spacing: 1px; font-variation-settings: normal; }
+  .t-tag-sm-caps  { font-family: var(--font-mono); font-weight: 350; font-size: 12px; line-height: 16px; letter-spacing: 2px; text-transform: uppercase; font-variation-settings: normal; }
+  @media (min-width: 1024px) {
+    .t-display-xl   { font-size: 54px; line-height: 56px; }
+    .t-display-lg   { font-size: 48px; line-height: 52px; }
+    .t-display-md   { font-size: 36px; line-height: 40px; }
+    .t-body-xl      { font-size: 26px; line-height: 36px; }
+    .t-body-md      { font-size: 20px; }
+    .t-body-base    { font-size: 18px; }
+    .t-editorial-xl { font-size: 54px; line-height: 56px; }
+    .t-editorial-sm { font-size: 23px; line-height: 28px; }
+  }
+  .c-brand { color: var(--rvt-crimson); }
+  .c-strong { color: var(--rvt-text-strong); }
+
+  /* =========================================================================
+     HEADER — full viewport width at every size (Figma 5:12500)
+     ========================================================================= */
+  .chrome { position: sticky; top: 0; z-index: 70; background: #fff; }
+  .site-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 24px;
+    background: #fff;
+    border-bottom: 1px solid var(--rvt-border);
+  }
+  .lockup { display: flex; align-items: center; gap: 6px; height: 44px; flex: none; }
+  .lockup img { width: 37px; height: 44px; }
+  .lockup-text { display: flex; flex-direction: column; gap: 2px; padding-top: 1px; text-transform: uppercase; white-space: nowrap; }
+  .lockup-title { font-size: 16px; line-height: 16px; color: var(--rvt-text-strong); font-variation-settings: 'wght' 600, 'wdth' 40, 'opsz' 16; }
+  .lockup-campus { font-size: 14px; line-height: 14px; color: var(--rvt-text-default); font-variation-settings: 'wght' 350, 'wdth' 40, 'opsz' 20; }
+  .header-tools { display: flex; align-items: center; gap: 16px; }
+  .header-ctas { display: flex; align-items: center; gap: 16px; }
+  .cta-sm {
+    display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; flex: none;
+    border: 1px solid var(--rvt-crimson); color: var(--rvt-crimson); white-space: nowrap;
+  }
+  .cta-sm:hover, .cta-sm:active { color: var(--rvt-crimson-dark); border-color: var(--rvt-crimson-dark); }
+  .tool-btn {
+    display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; flex: none; padding: 0;
+    border: 1px solid var(--rvt-text-strong); background: transparent; color: var(--rvt-text-strong); cursor: pointer;
+  }
+  .tool-btn:hover, .tool-btn:active { color: #000; border-color: #000; }
+  .tool-btn .when-open { display: none; }
+  .tool-btn[aria-expanded="true"] .when-open { display: block; }
+  .tool-btn[aria-expanded="true"] .when-closed { display: none; }
+  #sidenav-open { display: none; }
+
+  /* Search — slides open in flow under the header, same ease as the menu. */
+  #search-panel {
+    max-height: 0; overflow: hidden; visibility: hidden; background: #fff;
+    transition: max-height 400ms var(--ease), box-shadow 400ms var(--ease);
+  }
+  #search-panel.is-open { visibility: visible; box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.15); }
+  .search-inner { padding: 24px; }
+  .search-form { display: flex; align-items: center; gap: 8px; height: 48px; padding-left: 12px; border: 1px solid var(--rvt-text-strong); max-width: 533px; margin-left: auto; }
+  .search-form input { flex: 1; min-width: 0; border: 0; outline: 0; background: transparent; font: inherit; color: var(--rvt-text-strong); }
+  .search-go { height: 48px; padding: 0 16px; border: 0; background: var(--rvt-text-strong); color: #fff; cursor: pointer; }
+  .search-go:hover { background: #000; }
+
+  /* =========================================================================
+     LAYOUT — sidebar locked left, content centered in the remaining space
+     ========================================================================= */
+  #layout { display: flex; flex: 1; width: 100%; }
+  .rail { flex: none; width: var(--sidenav-width); border-right: 1px solid var(--rvt-border); background: #fff; }
+  #content-column { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+  #main-content { flex: 1; }
+  #main-content:focus { outline: none; }
+  /* Each band's background runs the full width of the content column; its
+     contents clamp to the Figma max width and center. */
+  .wrap { width: 100%; max-width: var(--content-max); margin-inline: auto; }
+
+  /* =========================================================================
+     SIDENAV (Figma 5:12507; behavior from sidebar-v2-children)
+     ========================================================================= */
+  #sidenav {
+    position: sticky; top: var(--chrome-h);
+    max-height: calc(100vh - var(--chrome-h)); overflow-y: auto;
+    padding: var(--sidenav-pad) var(--sidenav-pad) 64px;
+  }
+  #sidenav-nav { padding-top: 28px; }
+  #sidenav-nav .sidenav-after-back { padding-top: 20px; }
+  #sidenav .nav-btn-back {
+    display: flex; width: max-content; max-width: 100%; align-items: center; gap: 8px; height: 24px;
+    border: 0; padding: 0; background: transparent; color: var(--rvt-text-strong); cursor: pointer;
+  }
+  #sidenav .nav-btn-back:hover, #sidenav .nav-btn-back:active { color: #000; }
+  #sidenav a.sidenav-title {
+    display: flex; width: 100%; align-items: center; gap: 8px;
+    margin-top: 14px; padding-bottom: 12px; border-bottom: 1px solid var(--rvt-border);
+    color: var(--rvt-crimson); font-size: 16px; line-height: 20px; font-variation-settings: 'wght' 600, 'wdth' 100;
+  }
+  #sidenav a.sidenav-title .sidenav-title-label { flex: 1; min-width: 0; text-decoration: underline; text-underline-position: from-font; }
+  #sidenav .sidenav-title-arrow { display: none; }
+  #sidenav-nav ul > li { margin-bottom: -1px; }
+  #sidenav .sidenav-item {
+    display: flex; width: 100%; align-items: center; gap: 8px;
+    padding: 12px 0 11px; margin: 0; border: 0; border-bottom: 1px solid var(--rvt-border);
+    background: transparent; text-align: left; cursor: pointer; color: var(--rvt-text-strong);
+  }
+  #sidenav .sidenav-item-label { flex: 1; min-width: 0; font-size: 14px; line-height: 20px; }
+  #sidenav .sidenav-item-label.is-parent { font-variation-settings: 'wght' 600, 'wdth' 100; }
+  #sidenav .sidenav-item-label.is-child { font-variation-settings: 'wght' 350, 'wdth' 100; }
+  #sidenav .sidenav-item.is-current { color: var(--rvt-crimson); }
+  #sidenav .sidenav-item.is-current .sidenav-item-label { text-decoration: underline; text-underline-position: from-font; }
+  #sidenav .sidenav-item:hover, #sidenav .sidenav-item:active, #sidenav .sidenav-item:focus-visible { color: var(--rvt-crimson); }
+  #sidenav .sidenav-item:hover .sidenav-item-label,
+  #sidenav .sidenav-item:active .sidenav-item-label,
+  #sidenav .sidenav-item:focus-visible .sidenav-item-label { text-decoration: underline; text-underline-position: from-font; }
+
+  /* =========================================================================
+     SHARED COMPONENTS
+     ========================================================================= */
+  .rvt-link {
+    display: inline-flex; align-items: center; gap: 8px; height: 48px; padding: 0 16px; flex: none;
+    border: 1px solid var(--rvt-crimson); color: var(--rvt-crimson); white-space: nowrap;
+  }
+  .rvt-link:hover, .rvt-link:active { color: var(--rvt-crimson-dark); border-color: var(--rvt-crimson-dark); }
+  .theme-crimson .rvt-link { border-color: var(--rvt-bg-strong); color: var(--rvt-bg-strong); }
+  .theme-crimson .rvt-link:hover { border-color: #fff; color: #fff; }
+  .rvt-image { display: block; width: 100%; height: auto; object-fit: cover; }
+  .ratio-3-2 { aspect-ratio: 300 / 200; }
+  .ratio-2-1 { aspect-ratio: 300 / 150; }
+  .ratio-1-1 { aspect-ratio: 1 / 1; }
+  .eyebrow { padding-bottom: 12px; }
+
+  /* rvt-hero-statement (12:11198) */
+  .hero { background: var(--rvt-crimson); color: #fff; }
+  .hero .wrap { padding: 0 var(--gutter) 40px; }
+  .hero-text { padding: 128px 0 48px; text-align: center; }
+  .hero-intro { max-width: 1000px; margin: 0 auto; padding-top: 24px; }
+  .hero-media { position: relative; }
+  .hero-card {
+    position: absolute; right: 0; bottom: 0; width: 700px; max-width: 100%;
+    display: flex; align-items: flex-start; gap: 8px; padding: 16px;
+    background: var(--rvt-crimson-dark); filter: drop-shadow(0 2px 4px rgba(31, 37, 40, 0.12));
+  }
+  .hero-card img { width: 48px; height: 48px; flex: none; }
+  .hero-card p { flex: 1; min-width: 0; padding-top: 5px; color: #fff; }
+
+  /* rvt-stat (12:11199) */
+  /* Figma strokes sit inside the box, so rules are drawn as inset shadows and take no space. */
+  .stat { background: var(--rvt-crimson); color: #fff; box-shadow: inset 0 -1px 0 var(--rvt-crimson-border); }
+  .stat-row { box-shadow: inset 0 1px 0 var(--rvt-crimson-border), inset 0 -1px 0 var(--rvt-crimson-border); }
+  .stat-row .wrap { display: flex; padding: 0 var(--gutter); }
+  .stat-item { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 24px; padding: 64px 32px; border-right: 1px solid var(--rvt-crimson-border); }
+  .stat-item:first-child { padding-left: 0; }
+  .stat-item:last-child { padding-right: 0; border-right: 0; }
+  .stat-item img { width: 64px; height: 64px; }
+  .stat-item div { display: flex; flex-direction: column; gap: 16px; }
+  .stat-note { padding: 16px 80px 16px var(--gutter); color: var(--rvt-bg-strong); }
+
+  /* rvt-section-intro (12:11200, 12:11209, 19:8019) */
+  .section { background: #fff; }
+  .section .wrap { display: flex; flex-direction: column; gap: 40px; padding: 128px var(--gutter); }
+  .section-head { display: flex; align-items: flex-end; justify-content: flex-end; gap: 64px; }
+  .section-head-text { flex: 1 0 0; min-width: 0; }
+  .section-head-text h2, .section-head-text p { max-width: 920px; }
+  .section-head-text .t-body-md { padding-top: 24px; }
+  .section-actions { flex: 0 1 439px; min-width: max-content; display: flex; justify-content: flex-end; }
+  .section--news .wrap { padding-top: 96px; }
+  .section--center .wrap { padding-inline: 80px; }
+  .section--center .section-head { display: block; text-align: center; }
+  .section--center .section-head-text h2, .section--center .section-head-text p { margin-inline: auto; }
+  .card-row { display: flex; align-items: stretch; gap: 40px; }
+  .card-row > * { flex: 1 0 0; min-width: 0; }
+
+  /* rvt-card-feature (12:7688) — arrow box pinned bottom-right, out of the text flow */
+  .card-feature, .card-news { position: relative; background: #fff; }
+  .card-feature::before, .card-news::before { content: ""; position: absolute; inset: 0; border: 1px solid var(--rvt-border); pointer-events: none; z-index: 1; }
+  .card-feature-body { padding: 40px; }
+  .card-feature h3 { color: var(--rvt-crimson); text-wrap: balance; }
+  .card-feature h3 a::after { content: ""; position: absolute; inset: 0; }
+  .card-feature:hover h3 a, .card-feature h3 a:focus-visible { text-decoration: underline; text-underline-position: from-font; }
+  .card-feature p { padding: 20px 16px 0 0; }
+  .card-arrow {
+    position: absolute; right: 0; bottom: 0; width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
+    border-left: 1px solid var(--rvt-border); border-top: 1px solid var(--rvt-border); color: var(--rvt-crimson);
+  }
+
+  /* rvt-card-news */
+  .card-news { display: flex; flex-direction: column; justify-content: space-between; padding: 32px; }
+  .card-news .rvt-image { margin-bottom: 32px; }
+  .card-news .tag { display: block; padding: 0 0 4px 2px; color: var(--rvt-crimson); }
+  .card-news-title { display: flex; align-items: flex-start; gap: 16px; }
+  .card-news-title h3 { flex: 1 0 0; min-width: 0; color: var(--rvt-text-strong); }
+  .card-news-title h3 a::after { content: ""; position: absolute; inset: 0; }
+  .card-news:hover h3 a, .card-news h3 a:focus-visible { text-decoration: underline; text-underline-position: from-font; }
+  .card-news-title .icon { margin-top: 6px; color: var(--rvt-text-strong); }
+  .card-news time { display: block; padding-top: 24px; color: var(--rvt-text-default); }
+
+  /* rvt-callout (12:11212) */
+  .callout-band .wrap { padding: 0 var(--gutter) 128px; }
+  .callout { display: flex; align-items: flex-start; justify-content: center; gap: 32px; padding: 80px; background: var(--rvt-bg-strong); color: var(--rvt-crimson); }
+  .callout > img { width: 80px; height: 80px; flex: none; }
+  .callout-body { flex: 1 0 0; min-width: 0; max-width: 850px; padding-top: 8px; }
+  .callout-body .t-tag-sm-caps { padding: 0 0 8px 2px; }
+  .callout-body .t-body-sm { padding-top: 20px; }
+  .actions-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding-top: 32px; }
+
+  /* rvt-billboard (12:11207) */
+  .billboard-band .wrap { padding: 0 var(--gutter); }
+  .billboard { display: flex; align-items: flex-end; gap: 32px; background: var(--rvt-bg-strong); }
+  .billboard-media { flex: 0 1 924px; min-width: 0; padding: 24px 0 24px 24px; }
+  .billboard-media img { max-width: 900px; }   /* Figma image slot: 900 × 900 */
+  .billboard-body { flex: 1 0 240px; min-width: 0; padding: 0 48px 48px 0; }
+  .billboard-body .t-tag-sm-caps { padding: 0 0 8px 2px; }
+  .billboard-body .t-body-sm { padding-top: 20px; }
+  .list-hub-sm { padding-top: 32px; }
+  .list-hub-sm a { display: flex; align-items: flex-start; gap: 4px; padding: 12px 0; border-top: 1px solid var(--rvt-border); color: var(--rvt-text-strong); }
+  .list-hub-sm li:last-child a { padding-bottom: 0; }
+  .list-hub-sm .arrow-box { display: flex; align-items: center; width: 16px; height: 24px; flex: none; }
+  .list-hub-sm a:hover span:last-child, .list-hub a:hover span:last-child { text-decoration: underline; text-underline-position: from-font; }
+  .list-hub-sm a:hover, .list-hub a:hover { color: var(--rvt-crimson); }
+
+  /* rvt-text-essay (12:11201) + rvt-image-hub (12:11203) + rvt-quote (12:11210) */
+  .theme-crimson { background: var(--rvt-crimson); color: #fff; }
+  .essay .wrap { padding: 160px 80px 0; }
+  .essay-inner { max-width: 920px; margin: 0 auto; display: flex; flex-direction: column; align-items: center; }
+  .essay-inner > img { width: 95px; height: 96px; margin-bottom: 32px; }
+  .essay-inner h2 { text-align: center; padding-bottom: 24px; }
+  .essay-inner .t-body-xl { align-self: stretch; padding-top: 24px; }
+  .essay-inner .actions-row { justify-content: center; gap: 24px; padding-top: 48px; }
+  .image-hub .wrap { padding: 80px var(--gutter) 0; }
+  .image-hub-secondary { display: flex; gap: 8px; padding-top: 8px; }
+  .image-hub-secondary > * { flex: 1 0 0; min-width: 0; }
+  .image-hub figcaption { padding-top: 16px; }
+  .quote .wrap { display: flex; flex-direction: column; align-items: flex-start; gap: 32px; padding: 160px var(--gutter); }
+  .quote-mark { width: 85px; height: 64px; }
+  .quote-mark img { width: 89px; height: 66px; max-width: none; margin-top: -1px; }
+  .quote blockquote { max-width: 1160px; }
+
+  /* rvt-list-hub (12:11214) */
+  .quick-links .wrap { display: flex; align-items: flex-start; gap: 64px; padding: 0 var(--gutter); }
+  .quick-links .wrap > * { flex: 1 0 0; min-width: 0; }
+  .quick-links p { padding-top: 24px; }
+  .list-hub { padding-top: 4px; }
+  .list-hub a { display: flex; align-items: flex-start; gap: 8px; padding: 20px 16px; box-shadow: inset 0 1px 0 var(--rvt-border), inset 0 -1px 0 var(--rvt-border); color: var(--rvt-text-strong); }
+  .list-hub li:last-child a { box-shadow: none; padding-bottom: 0; }
+  .list-hub .arrow-box { display: flex; align-items: center; height: 24px; flex: none; }
+
+  /* rvt-footer (12:11216) — fills the full width of the content column */
+  .site-footer { padding-top: 80px; }
+  .rvt-footer { background: #fff; box-shadow: inset 0 1px 0 var(--rvt-border); }
+  .footer-social { display: flex; gap: 8px; padding: 16px 24px; }
+  .footer-social a { display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border: 1px solid var(--rvt-crimson); }
+  .footer-social a:hover { border-color: var(--rvt-crimson-dark); }
+  .footer-social img { width: 12px; height: 12px; }
+  .footer-legal { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; padding: 0 24px 16px; }
+  .footer-legal > img { width: 22px; height: 28px; }
+  .footer-legal ul { display: flex; flex-wrap: wrap; gap: 8px 16px; color: var(--rvt-text-default); }
+  .footer-legal a:hover { text-decoration: underline; }
+
+  /* Interior placeholder page */
+  .interior .wrap { padding: 64px var(--gutter) 128px; }
+  .interior h1 { max-width: 920px; }
+  .interior p { max-width: 920px; padding-top: 24px; }
+  .interior .child-links { max-width: 600px; padding-top: 40px; }
+
+  /* Narrow desktop: the rail is showing but the content column is under ~1020px. */
+  @media (min-width: 1024px) and (max-width: 1279.98px) {
+    .stat-row .wrap { flex-wrap: wrap; }
+    .stat-item { flex: 1 0 50%; padding: 48px 32px 48px 0; border-right: 0; }
+    .stat-item:nth-child(odd) { border-right: 1px solid var(--rvt-crimson-border); }
+    .stat-item:nth-child(even) { padding: 48px 0 48px 32px; }
+    .stat-item:nth-child(-n+2) { border-bottom: 1px solid var(--rvt-crimson-border); }
+    .card-row { gap: 24px; }
+    .card-feature-body { padding: 24px 24px 64px; }
+    .card-feature p { padding-right: 0; }
+    .card-news { padding: 24px; }
+    .section--center .wrap, .essay .wrap { padding-inline: var(--gutter); }
+    .callout { padding: 48px; }
+  }
+
+  /* =========================================================================
+     BELOW THE SIDENAV BREAKPOINT (1024px)
+     The rail becomes a disclosure under the compact header: it opens in flow
+     and pushes the page down (400ms). Parents drill; Back steps up a level.
+     ========================================================================= */
+  @media (max-width: 1023.98px) {
+    :root { --gutter: 24px; }
+    .site-header { flex-wrap: wrap; padding: 12px 16px 0; row-gap: 0; }
+    .header-tools { display: contents; }
+    .lockup { order: 1; margin-right: auto; }
+    #search-toggle { order: 2; margin-right: 8px; }
+    #sidenav-open { display: flex; order: 3; }
+    .header-ctas { order: 4; flex: 0 0 100%; justify-content: flex-end; gap: 8px; padding: 16px 0 12px; }
+    .search-inner { padding: 16px; }
+    .search-form { max-width: none; }
+
+    #layout { display: block; }
+    .rail { width: 100%; border-right: 0; }
+    #sidenav {
+      position: relative; top: auto; z-index: 2;
+      max-height: 0; overflow: hidden; padding: 0; visibility: hidden; pointer-events: none;
+      transition: max-height 400ms var(--ease), box-shadow 400ms var(--ease);
+    }
+    #sidenav.is-open { visibility: visible; pointer-events: auto; box-shadow: 0 2px 6px 0 rgba(0, 0, 0, 0.15); }
+    #sidenav-nav { padding: 44px 16px 8px; border-bottom: 1px solid transparent; }
+    #sidenav-nav ul > li:last-child .sidenav-item { border-bottom-color: transparent; }
+    #sidenav .sidenav-mobile-tools { display: flex; align-items: center; padding-bottom: 8px; }
+    #sidenav .sidenav-mobile-tools .nav-btn-back { height: auto; }
+    #sidenav a.sidenav-title { color: var(--rvt-text-strong); }
+    #sidenav a.sidenav-title .sidenav-title-label { text-decoration: none; }
+    #sidenav a.sidenav-title[aria-current="page"] { color: var(--rvt-crimson); }
+    #sidenav a.sidenav-title[aria-current="page"] .sidenav-title-label { text-decoration: underline; }
+    #sidenav .sidenav-title-arrow { display: block; }
+
+    .hero-text { padding: 64px 0 32px; }
+    .stat-row .wrap { flex-wrap: wrap; }
+    .stat-item { flex: 1 0 50%; padding: 40px 24px 40px 0; border-right: 0; border-bottom: 1px solid var(--rvt-crimson-border); }
+    .stat-item:nth-last-child(-n+2) { border-bottom: 0; }
+    .stat-note { padding-right: var(--gutter); }
+    .section .wrap, .section--news .wrap, .section--center .wrap { padding: 64px var(--gutter); }
+    .section-head { flex-direction: column; align-items: flex-start; gap: 24px; }
+    .section-head-text { flex: none; width: 100%; }
+    .section-actions { width: auto; }
+    .section--center .section-actions { justify-content: center; }
+    .card-row { flex-direction: column; gap: 24px; }
+    .card-feature-body { padding: 32px 32px 64px; }
+    .card-feature p { padding-right: 0; }
+    .card-arrow { width: 32px; height: 32px; }
+    .callout-band .wrap { padding-bottom: 64px; }
+    .callout { flex-direction: column; padding: 32px; gap: 16px; }
+    .callout-body { flex: none; padding-top: 0; }
+    .billboard { flex-direction: column; align-items: stretch; gap: 8px; }
+    .billboard-media { flex: none; padding: 24px 24px 0; }
+    .billboard-body { flex: none; padding: 24px; }
+    .essay .wrap { padding: 80px var(--gutter) 0; }
+    .image-hub .wrap { padding-top: 40px; }
+    .quote .wrap { padding: 80px var(--gutter); }
+    .quick-links .wrap { flex-direction: column; gap: 32px; }
+    .quick-links .wrap > * { flex: none; width: 100%; }
+    .interior .wrap { padding: 40px var(--gutter) 64px; }
+  }
+  @media (max-width: 760px) {
+    /* Card sits below the photo and overlaps its bottom edge. */
+    .hero-card { position: relative; width: 100%; margin-top: -7%; }
+    .stat-item { flex-basis: 100%; }
+    .stat-item:nth-last-child(2) { border-bottom: 1px solid var(--rvt-crimson-border); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #sidenav, #search-panel { transition: none; }
+  }
+</style>
+</head>
+
+<body>
+<a class="skip-link t-action-sm" href="#main-content">Skip to main content</a>
+
+<div class="chrome">
+  <header class="site-header">
+    <a class="lockup" data-nav href="#/">
+      <img src="assets/trident-tab.svg" alt="" width="37" height="44">
+      <span class="lockup-text">
+        <span class="lockup-title">indiana university</span>
+        <span class="lockup-campus">bloomington</span>
+      </span>
+    </a>
+    <div class="header-tools">
+      <div class="header-ctas">
+        <a class="cta-sm" data-nav href="#/admissions"><span class="t-action-sm">Apply now</span><span class="icon-12" data-icon="arrow-right-12"></span></a>
+        <!-- Label is verbatim from Figma ("Vist campus"). -->
+        <a class="cta-sm" data-nav href="#/visit-campus"><span class="t-action-sm">Vist campus</span><span class="icon-12" data-icon="arrow-right-12"></span></a>
+      </div>
+      <button type="button" id="search-toggle" class="tool-btn" aria-expanded="false" aria-controls="search-panel">
+        <span class="sr-only">Search</span>
+        <span class="icon when-closed" data-icon="magnifying-glass"></span>
+        <span class="icon when-open" data-icon="close"></span>
+      </button>
+      <button type="button" id="sidenav-open" class="tool-btn" aria-expanded="false" aria-controls="sidenav">
+        <span class="sr-only">Menu</span>
+        <span class="icon when-closed" data-icon="menu"></span>
+        <span class="icon when-open" data-icon="close"></span>
+      </button>
+    </div>
+  </header>
+  <div id="search-panel" aria-label="Search">
+    <div class="search-inner">
+      <form class="search-form" id="site-search-form" action="">
+        <label for="site-search" class="sr-only">Search this site</label>
+        <span class="icon c-strong" data-icon="magnifying-glass"></span>
+        <input id="site-search" name="search" type="search" placeholder="Search this site" class="t-body-sm">
+        <button type="submit" class="search-go t-action-sm">Go</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div id="layout">
+  <div class="rail">
+    <nav id="sidenav" aria-label="Menu"><div id="sidenav-nav"></div></nav>
+  </div>
+
+  <div id="content-column">
+    <main id="main-content"></main>
+
+    <footer class="site-footer">
+      <div class="rvt-footer">
+        <div class="footer-social">
+          <a href="#/" aria-label="Bluesky"><img src="assets/social-bluesky.svg" alt="" width="12" height="12"></a>
+          <a href="#/" aria-label="Facebook"><img src="assets/social-facebook.svg" alt="" width="12" height="12"></a>
+          <a href="#/" aria-label="Instagram"><img src="assets/social-instagram.svg" alt="" width="12" height="12"></a>
+          <a href="#/" aria-label="LinkedIn"><img src="assets/social-linkedin.svg" alt="" width="12" height="12"></a>
+          <a href="#/" aria-label="YouTube"><img src="assets/social-youtube.svg" alt="" width="12" height="12"></a>
+          <a href="#/" aria-label="X"><img src="assets/social-x.svg" alt="" width="12" height="12"></a>
+        </div>
+        <div class="footer-legal">
+          <img src="assets/trident.svg" alt="" width="22" height="28">
+          <ul class="t-action-sm-regular">
+            <li><a href="#/">Accessibility</a></li>
+            <li><a href="#/">College Scorecard</a></li>
+            <li><a href="#/">Open to all</a></li>
+            <li><a href="#/">Privacy Notice</a></li>
+            <li>Copyright © 2025 The Trustees of Indiana University</li>
+          </ul>
+        </div>
+      </div>
+    </footer>
+  </div>
+</div>
+
+<!-- =========================================================================
+     HOMEPAGE (Figma "Index Page" 12:11195). Copy is verbatim from Figma.
+     ========================================================================= -->
+<template id="tpl-home">
+  <section class="hero">
+    <div class="wrap">
+      <div class="hero-text">
+        <h1 class="t-display-xl">never daunted</h1>
+        <p class="hero-intro t-body-md">Indiana’s flagship campus, where discovery happens in every field, from genomics to the arts to AI.</p>
+      </div>
+      <div class="hero-media">
+        <img class="rvt-image ratio-2-1" src="assets/hero.jpg" alt="" width="1244" height="622">
+        <div class="hero-card">
+          <img src="assets/symbol-iu.svg" alt="" width="48" height="48">
+          <p class="t-action-lg">IU Football’s championship drive goes beyond sports. You’ll find it all across IU Bloomington, in classrooms, labs, studios, and communities worldwide.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="stat" aria-label="IU Bloomington by the numbers">
+    <div class="stat-row">
+      <div class="wrap">
+        <div class="stat-item">
+          <img src="assets/beaker.svg" alt="" width="64" height="64">
+          <div><p class="t-number">1B+</p><p class="t-tag-lg">in research funding, powering global breakthroughs</p></div>
+        </div>
+        <div class="stat-item">
+          <img src="assets/money-symbol.svg" alt="" width="64" height="64">
+          <div><p class="t-number">$75M</p><p class="t-tag-lg">invested in the future of engineering and tech</p></div>
+        </div>
+        <div class="stat-item">
+          <img src="assets/sample-gates.svg" alt="" width="64" height="64">
+          <div><p class="t-number">Top 10</p><p class="t-tag-lg">for developing future leaders (TIME)</p></div>
+        </div>
+        <div class="stat-item">
+          <img src="assets/group-iu.svg" alt="" width="64" height="64">
+          <div><p class="t-number">806,000+</p><p class="t-tag-lg">alumni leading change around the world</p></div>
+        </div>
+      </div>
+    </div>
+    <div class="wrap"><p class="stat-note t-tag-sm">Based on 2026 data</p></div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-head-text">
+          <p class="eyebrow t-tag-sm-caps c-brand">Academics</p>
+          <h2 class="t-display-md c-brand">Learn without limits. Lead with purpose.</h2>
+          <p class="t-body-md">Home to the nation’s #1 public affairs school and top-ranked business and arts programs, IU lets you learn from world-class faculty and take on challenges that matter.</p>
+        </div>
+        <div class="section-actions">
+          <a class="rvt-link" data-nav href="#/academics"><span class="t-action-lg">Explore our programs</span><span class="icon" data-icon="arrow-right"></span></a>
+        </div>
+      </div>
+      <div class="card-row">
+        <article class="card-feature">
+          <img class="rvt-image ratio-3-2" src="assets/intro-1.jpg" alt="" width="776" height="518">
+          <div class="card-feature-body">
+            <h3 class="t-display-xs"><a data-nav href="#/degrees-majors">Explore programs by interest</a></h3>
+            <p class="t-body-sm">Browse nationally recognized majors and degrees by interest and find the one that fits you.</p>
+          </div>
+          <span class="card-arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span>
+        </article>
+        <article class="card-feature">
+          <img class="rvt-image ratio-3-2" src="assets/intro-2.jpg" alt="" width="776" height="518">
+          <div class="card-feature-body">
+            <h3 class="t-display-xs"><a data-nav href="#/academics">Explore academics at IU</a></h3>
+            <p class="t-body-sm">See how a liberal arts foundation teaches you to think critically and solve problems in any career.</p>
+          </div>
+          <span class="card-arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span>
+        </article>
+        <article class="card-feature">
+          <img class="rvt-image ratio-3-2" src="assets/intro-3.jpg" alt="" width="776" height="518">
+          <div class="card-feature-body">
+            <h3 class="t-display-xs"><a data-nav href="#/undergraduate-research">Find research opportunities</a></h3>
+            <p class="t-body-sm">Work alongside faculty on research that gets real results, from new medical treatments to new technology.</p>
+          </div>
+          <span class="card-arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="callout-band">
+    <div class="wrap">
+      <div class="callout">
+        <img src="assets/person-iu.svg" alt="" width="80" height="80">
+        <div class="callout-body">
+          <p class="t-tag-sm-caps">Start your application</p>
+          <h2 class="t-display-xs">Your IU story begins here</h2>
+          <p class="t-body-sm">Ready to see where your future takes you? Apply now, or request info to learn more about IU.</p>
+          <div class="actions-row">
+            <a class="rvt-link" data-nav href="#/admissions"><span class="t-action-lg">Apply now</span><span class="icon" data-icon="arrow-right"></span></a>
+            <a class="rvt-link" data-nav href="#/admissions"><span class="t-action-lg">Request Info</span><span class="icon" data-icon="arrow-right"></span></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="billboard-band">
+    <div class="wrap">
+      <div class="billboard">
+        <div class="billboard-media">
+          <img class="rvt-image ratio-1-1" src="assets/billboard.jpg" alt="" width="900" height="900">
+        </div>
+        <div class="billboard-body">
+          <p class="t-tag-sm-caps c-brand">Research</p>
+          <h2 class="t-display-xs c-brand">A research university at full power</h2>
+          <p class="t-body-sm">At IU, research doesn't stay in the lab. It improves patient care, advances technology, and shapes policy—solving real problems and driving growth across Indiana and beyond.</p>
+          <ul class="list-hub-sm">
+            <li><a class="t-action-lg" data-nav href="#/research"><span class="arrow-box"><span class="icon-12" data-icon="arrow-right-12"></span></span><span>Explore IU research</span></a></li>
+            <li><a class="t-action-lg" data-nav href="#/undergraduate-research"><span class="arrow-box"><span class="icon-12" data-icon="arrow-right-12"></span></span><span>Find student research opportunities</span></a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--news">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-head-text">
+          <h2 class="t-display-md c-brand">Explore research news</h2>
+        </div>
+        <div class="section-actions">
+          <a class="rvt-link" href="#/"><span class="t-action-lg">All campus news</span><span class="icon" data-icon="arrow-up-right"></span></a>
+        </div>
+      </div>
+      <div class="card-row">
+        <article class="card-news">
+          <div>
+            <img class="rvt-image ratio-3-2" src="assets/news-1.jpg" alt="" width="648" height="432">
+            <span class="tag t-tag-sm">Science and Technology</span>
+            <div class="card-news-title">
+              <h3 class="t-editorial-sm"><a href="#/">IU researcher investigating a key barrier to curing HIV</a></h3>
+              <span class="icon" data-icon="arrow-up-right"></span>
+            </div>
+          </div>
+          <time class="t-tag-sm">Sept. 28, 2026</time>
+        </article>
+        <article class="card-news">
+          <div>
+            <img class="rvt-image ratio-3-2" src="assets/news-2.jpg" alt="" width="648" height="432">
+            <!-- Label is verbatim from Figma ("Science and Technolog"). -->
+            <span class="tag t-tag-sm">Science and Technolog</span>
+            <div class="card-news-title">
+              <h3 class="t-editorial-sm"><a href="#/">As AI transforms science and research, IU cybersecurity experts protect against hidden risks</a></h3>
+              <span class="icon" data-icon="arrow-up-right"></span>
+            </div>
+          </div>
+          <time class="t-tag-sm">Sept. 22, 2026</time>
+        </article>
+        <article class="card-news">
+          <div>
+            <img class="rvt-image ratio-3-2" src="assets/news-3.jpg" alt="" width="648" height="432">
+            <span class="tag t-tag-sm">Health and Wellness</span>
+            <div class="card-news-title">
+              <h3 class="t-editorial-sm"><a href="#/">NIH funds groundbreaking heat stress research at School of Public Health-Bloomington</a></h3>
+              <span class="icon" data-icon="arrow-up-right"></span>
+            </div>
+          </div>
+          <time class="t-tag-sm">Sept. 1, 2026</time>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="essay theme-crimson">
+    <div class="wrap">
+      <div class="essay-inner">
+        <img src="assets/indiana-state.svg" alt="" width="95" height="96">
+        <p class="eyebrow t-tag-md-caps">Experiential learning</p>
+        <h2 class="t-display-lg">Real-world experience that leads to real careers</h2>
+        <p class="t-body-xl">Turn what you learn into what you can do. Internships, community projects, and study abroad let you apply your skills, explore careers, and build confidence.</p>
+        <div class="actions-row">
+          <a class="rvt-link" data-nav href="#/academics"><span class="t-action-lg">Go beyond the classroom</span><span class="icon" data-icon="arrow-right"></span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="image-hub theme-crimson">
+    <div class="wrap">
+      <figure>
+        <img class="rvt-image ratio-2-1" src="assets/hub-main.jpg" alt="" width="1244" height="622">
+        <div class="image-hub-secondary">
+          <img class="rvt-image ratio-1-1" src="assets/hub-2.jpg" alt="" width="618" height="618">
+          <img class="rvt-image ratio-1-1" src="assets/hub-3.jpg" alt="" width="618" height="618">
+        </div>
+        <figcaption class="t-tag-md">IU students learn beyond the classroom, from D.C. to small-town Indiana to Greece.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="quote theme-crimson">
+    <div class="wrap">
+      <div class="quote-mark"><img src="assets/quote.svg" alt="" width="89" height="66"></div>
+      <blockquote class="t-editorial-xl">IU has helped me connect my interests in science and society in ways I never expected. I know I’m being prepared to make a difference.</blockquote>
+      <div>
+        <p class="t-body-sm-strong">Eva Guzman</p>
+        <p class="t-body-base">Biology major | Healthcare Management and Policy minor</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--center">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="section-head-text">
+          <p class="eyebrow t-tag-sm-caps c-brand">Campus life</p>
+          <h2 class="t-display-md c-brand">The quintessential college experience</h2>
+          <p class="t-body-md">When you walk through the Sample Gates, you join a community with over 200 years of Hoosier tradition on a Big Ten campus built for connection and discovery.</p>
+        </div>
+      </div>
+      <div class="card-row">
+        <article class="card-feature">
+          <img class="rvt-image ratio-3-2" src="assets/campus-1.jpg" alt="" width="734" height="489">
+          <div class="card-feature-body">
+            <h3 class="t-display-xs"><a data-nav href="#/visit-campus">Visit campus</a></h3>
+            <p class="t-body-sm">Tour one of the most beautiful campuses in the country, in person or online.</p>
+          </div>
+          <span class="card-arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span>
+        </article>
+        <article class="card-feature">
+          <img class="rvt-image ratio-3-2" src="assets/campus-2.jpg" alt="" width="734" height="489">
+          <div class="card-feature-body">
+            <h3 class="t-display-xs"><a data-nav href="#/campus-life">Student life</a></h3>
+            <p class="t-body-sm">Big campus. Tight-knit community. Find the clubs and traditions that fit you.</p>
+          </div>
+          <span class="card-arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span>
+        </article>
+        <article class="card-feature">
+          <img class="rvt-image ratio-3-2" src="assets/campus-3.jpg" alt="" width="734" height="489">
+          <div class="card-feature-body">
+            <h3 class="t-display-xs"><a data-nav href="#/bloomington">Life in Bloomington</a></h3>
+            <p class="t-body-sm">A true college town, right outside the Sample Gates.</p>
+          </div>
+          <span class="card-arrow" aria-hidden="true"><span class="icon" data-icon="arrow-right"></span></span>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="quick-links">
+    <div class="wrap">
+      <div>
+        <h2 class="t-display-md c-brand">Explore IU Bloomington</h2>
+        <p class="t-body-md">Discover campus housing and dining, navigate with interactive maps, access student support, and learn about IU’s history and leadership.</p>
+      </div>
+      <ul class="list-hub">
+        <li><a class="t-action-xl" data-nav href="#/housing-dining"><span class="arrow-box"><span class="icon" data-icon="arrow-right"></span></span><span>Housing &amp; dining</span></a></li>
+        <li><a class="t-action-xl" data-nav href="#/campus-life"><span class="arrow-box"><span class="icon" data-icon="arrow-right"></span></span><span>Campus &amp; navigation</span></a></li>
+        <li><a class="t-action-xl" data-nav href="#/student-support"><span class="arrow-box"><span class="icon" data-icon="arrow-right"></span></span><span>Student &amp; academic support</span></a></li>
+        <li><a class="t-action-xl" data-nav href="#/about"><span class="arrow-box"><span class="icon" data-icon="arrow-right"></span></span><span>About IU Bloomington</span></a></li>
+      </ul>
+    </div>
+  </section>
+</template>
+
+<script>
+  /* =========================================================================
+     BREAKPOINT
+     1024px is where the left rail appears; below it the rail is the slide-down
+     menu. Keep in step with the two media queries in the stylesheet.
+     ========================================================================= */
+  const SIDENAV_BREAKPOINT = 1024;
+
+  /* =========================================================================
+     IA
+     Top-level labels are the eight items in the Figma sidenav.
+     PLACEHOLDER: the Figma file only defines the top level. Every child below
+     is a stand-in so the nesting can be exercised — replace with the real IA.
+     ========================================================================= */
+  const IA = [
+    ['Academics', [
+      ['Degrees & majors'],
+      ['Schools', [['College of Arts and Sciences'], ['Kelley School of Business'], ['Jacobs School of Music'], ['Luddy School of Informatics, Computing, and Engineering']]],
+      ['Online programs'],
+      ['Study abroad'],
+      ['Libraries'],
+    ]],
+    ['Admissions', [['First-year students'], ['Transfer students'], ['International students'], ['Graduate & professional'], ['Visit campus']]],
+    ['Cost & Aid', [['Tuition & fees'], ['Scholarships'], ['Financial aid'], ['Net price calculator']]],
+    ['Campus Life', [
+      ['Housing & dining', [['Residence halls'], ['Dining'], ['Living learning communities']]],
+      ['Student organizations'],
+      ['Arts & culture'],
+      ['Athletics & recreation'],
+      ['Bloomington'],
+    ]],
+    ['Research', [['Centers & institutes'], ['Undergraduate research'], ['Research impact']]],
+    ['Student Support', [['Academic advising'], ['Career services'], ['Health & wellness'], ['Accessibility']]],
+    ['Alumni & Giving', [['Alumni association'], ['Give to IU']]],
+    ['About', [['Leadership'], ['History & traditions'], ['Rankings & facts'], ['Contact']]],
+  ];
+
+  const HOME = 'index';
+  const PAGES = { [HOME]: { l: 'Home', t: 'Indiana University Bloomington', p: null, c: [] } };
+  const slugify = (s) => s.toLowerCase().replace(/&/g, ' ').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  (function build(list, parent) {
+    for (const [label, kids] of list) {
+      const slug = slugify(label);
+      PAGES[slug] = { l: label, t: label + ' | Indiana University Bloomington', p: parent, c: [] };
+      PAGES[parent].c.push(slug);
+      if (kids) build(kids, slug);
+    }
+  })(IA, HOME);
+
+  /* =========================================================================
+     ICONS — Rivet outlines (16px box unless noted), exported from the Figma file
+     ========================================================================= */
+  const ICONS = {
+    'chevron-right': ['0 0 16 16', 'M6.26341 15.1459L12.31 8L6.26341 0.854065L4.73663 2.14595L9.69007 8L4.73663 13.8541L6.26341 15.1459Z'],
+    'arrow-right': ['0 0 16 16', 'M1 7h10.844L7.737 2.146 9.263.854 15.31 8l-6.047 7.146-1.526-1.292L11.844 9H1V7Z'],
+    'arrow-left': ['0 0 16 16', 'M15 7H4.156l4.107-4.854L6.737.854.69 8l6.047 7.146 1.526-1.292L4.156 9H15V7Z'],
+    'arrow-up-right': ['0 0 16 16', 'M10.5858 4L4 4V2L14 2L14 12H12L12 5.41421L3.70711 13.7071L2.29289 12.2929L10.5858 4Z'],
+    'arrow-right-12': ['0 0 12 12', 'M10.998 6L6.34766 11.5195L4.81836 10.2305L7.53906 7H1V5H7.53906L4.81836 1.76953L6.34766 0.480469L10.998 6Z'],
+    'magnifying-glass': ['0 0 16 16', 'M7 2a5 5 0 1 0 0 10A5 5 0 0 0 7 2ZM0 7a7 7 0 1 1 12.606 4.192l3.101 3.1-1.414 1.415-3.1-3.1A7 7 0 0 1 0 7Z'],
+    menu: ['0 0 16 16', 'M15 4H1V2H15V4ZM15 9H1V7H15V9ZM1 14H15V12H1V14Z'],
+    close: ['0 0 16 16', 'm3.5 2.086 4.5 4.5 4.5-4.5L13.914 3.5 9.414 8l4.5 4.5-1.414 1.414-4.5-4.5-4.5 4.5L2.086 12.5l4.5-4.5-4.5-4.5L3.5 2.086Z'],
+  };
+  const icon = (name) => {
+    const i = ICONS[name];
+    return i ? `<svg viewBox="${i[0]}" aria-hidden="true" focusable="false"><path d="${i[1]}"/></svg>` : '';
+  };
+  function paintIcons(root) {
+    for (const el of root.querySelectorAll('[data-icon]')) {
+      if (!el.firstChild) el.innerHTML = icon(el.dataset.icon);
+    }
+  }
+
+  /* =========================================================================
+     HELPERS
+     ========================================================================= */
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const href = (slug) => (slug === HOME ? '#/' : '#/' + slug);
+  const hasKids = (slug) => (PAGES[slug].c || []).length > 0;
+  function ancestry(slug) {
+    const chain = [];
+    for (let s = slug; s; s = PAGES[s].p) chain.unshift(s);
+    return chain;
+  }
+  /** A page with children shows its own children; a leaf shows its siblings. */
+  const sectionOf = (slug) => (hasKids(slug) ? slug : PAGES[slug].p);
+  const desktopView = window.matchMedia(`(min-width: ${SIDENAV_BREAKPOINT}px)`);
+
+  /* =========================================================================
+     SIDENAV (ported from sidebar-v2-children)
+     A page with children lists those children; a leaf lists its siblings.
+     Home, and any page whose section is Home, keeps the top-level list in the
+     bold main-nav style. The current row is crimson and underlined, with no
+     chevron. Other parents keep a right chevron. Desktop rows navigate. Below
+     1024 the same rows drill in the slide-down panel (a parent does not
+     navigate) and Back steps up one level.
+     ========================================================================= */
+  function navModel(slug) {
+    const isHome = slug === HOME || !PAGES[slug];
+    if (isHome) return { items: PAGES[HOME].c, back: null, current: null, top: true };
+    const section = sectionOf(slug);
+    if (!section || section === HOME) return { items: PAGES[HOME].c, back: null, current: slug, top: true };
+    const parent = PAGES[slug].p;
+    return {
+      items: PAGES[section].c,
+      back: parent ? { slug: parent, label: PAGES[parent].l } : null,
+      current: slug === section ? null : slug,
+      top: false,
+    };
+  }
+
+  function sidenavRow(s, current, top, drill) {
+    const page = PAGES[s];
+    const isCurrent = s === current;
+    const kids = hasKids(s);
+    const chev = kids && !isCurrent ? `<span class="icon sidenav-chevron" data-icon="chevron-right" aria-hidden="true"></span>` : '';
+    const label = `<span class="sidenav-item-label ${top ? 'is-parent' : 'is-child'}">${esc(page.l)}</span>`;
+    const cls = `sidenav-item${isCurrent ? ' is-current' : ''}`;
+    const control = drill && kids
+      ? `<button type="button" data-sidenav-down="${esc(s)}" class="${cls}">${label}${chev}</button>`
+      : `<a data-nav href="${href(s)}"${isCurrent ? ' aria-current="page"' : ''} class="${cls}">${label}${chev}</a>`;
+    return `<li>${control}</li>`;
+  }
+
+  function sidenavBack(back, drillUp) {
+    if (!back) return '';
+    const inner = `<span class="icon" data-icon="arrow-left"></span><span class="t-action-sm">${esc(back.label)}</span>`;
+    return drillUp
+      ? `<button type="button" data-sidenav-up class="nav-btn-back">${inner}</button>`
+      : `<a data-nav href="${href(back.slug)}" class="nav-btn-back">${inner}</a>`;
+  }
+
+  let mobileSidenavOpen = false;
+  let mobileStack = [];
+
+  function renderSidenav(slug) {
+    if (mobileSidenavOpen && !desktopView.matches) return renderMobileSidenav(slug);
+    const model = navModel(slug);
+    const items = model.items.map((s) => sidenavRow(s, model.current, model.top, false)).join('');
+    const back = sidenavBack(model.back, false);
+    const section = !model.top && PAGES[slug] ? sectionOf(slug) : null;
+    const onSection = !!(section && slug === section);
+    const title = section
+      ? `<a data-nav href="${href(section)}" class="sidenav-title"${onSection ? ' aria-current="page"' : ''}>` +
+        `<span class="sidenav-title-label">${esc(PAGES[section].l)}</span></a>`
+      : '';
+    return back + `<div class="${model.back ? 'sidenav-after-back' : ''}">${title}<ul>${items}</ul></div>`;
+  }
+
+  function renderMobileSidenav(slug) {
+    const current = PAGES[slug] ? slug : HOME;
+    if (mobileStack.length === 0) {
+      return `<div><ul>${PAGES[HOME].c.map((s) => sidenavRow(s, current, true, true)).join('')}</ul></div>`;
+    }
+    const section = mobileStack[mobileStack.length - 1];
+    const parentSlug = mobileStack.length >= 2 ? mobileStack[mobileStack.length - 2] : (PAGES[section].p || HOME);
+    const back = sidenavBack({ slug: parentSlug, label: PAGES[parentSlug].l }, true);
+    const onSection = current === section;
+    const title =
+      `<a data-nav href="${href(section)}" class="sidenav-title"${onSection ? ' aria-current="page"' : ''}>` +
+      `<span class="sidenav-title-label">${esc(PAGES[section].l)}</span>` +
+      `<span class="icon sidenav-title-arrow" data-icon="arrow-right" aria-hidden="true"></span></a>`;
+    const items = PAGES[section].c.map((s) => sidenavRow(s, current, false, true)).join('');
+    return `<div class="sidenav-mobile-tools">${back}</div><div class="sidenav-after-back">${title}<ul>${items}</ul></div>`;
+  }
+
+  /* =========================================================================
+     PAGES
+     ========================================================================= */
+  function renderInterior(slug, p) {
+    const parent = PAGES[p.p];
+    const kids = p.c.map((s) =>
+      `<li><a class="t-action-lg" data-nav href="${href(s)}"><span class="arrow-box"><span class="icon-12" data-icon="arrow-right-12"></span></span><span>${esc(PAGES[s].l)}</span></a></li>`
+    ).join('');
+    return (
+      `<section class="interior"><div class="wrap">` +
+      (parent && p.p !== HOME ? `<p class="eyebrow t-tag-sm-caps c-brand">${esc(parent.l)}</p>` : '') +
+      `<h1 class="t-display-md c-brand">${esc(p.l)}</h1>` +
+      `<p class="t-body-md">Placeholder page. The design for this page has not been built yet.</p>` +
+      (kids ? `<ul class="list-hub-sm child-links">${kids}</ul>` : '') +
+      `</div></section>`
+    );
+  }
+
+  /* =========================================================================
+     SLIDE-DOWN PANELS (menu below 1024, search at every size)
+     max-height is set from scrollHeight so the panel stays in flow and the
+     page moves with it. 400ms, one ease for open and close.
+     ========================================================================= */
+  const sidenav = document.getElementById('sidenav');
+  const sidenavNav = document.getElementById('sidenav-nav');
+  const sidenavOpenBtn = document.getElementById('sidenav-open');
+  const searchPanel = document.getElementById('search-panel');
+  const searchToggle = document.getElementById('search-toggle');
+  const main = document.getElementById('main-content');
+  const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const tokens = new WeakMap();
+
+  function fitPanel(el, open, isOpen) {
+    const token = (tokens.get(el) || 0) + 1;
+    tokens.set(el, token);
+    const live = () => tokens.get(el) === token;
+    if (!open) {
+      if (reduceMotion()) { el.style.visibility = ''; el.style.maxHeight = '0px'; return; }
+      el.style.visibility = 'visible';
+      window.setTimeout(() => { if (live() && !isOpen()) el.style.visibility = ''; }, 400);
+      requestAnimationFrame(() => { if (live() && !isOpen()) el.style.maxHeight = '0px'; });
+      return;
+    }
+    el.style.visibility = 'visible';
+    const apply = () => { if (live() && isOpen()) el.style.maxHeight = el.scrollHeight + 'px'; };
+    if (!reduceMotion() && (el.style.maxHeight === '' || el.style.maxHeight === '0px')) {
+      el.style.maxHeight = '0px';
+      requestAnimationFrame(apply);
+      return;
+    }
+    apply();
+  }
+
+  function syncMobileSidenavHidden() {
+    const hide = !desktopView.matches && !mobileSidenavOpen;
+    if (desktopView.matches) { sidenav.style.maxHeight = ''; sidenav.style.visibility = ''; }
+    sidenav.toggleAttribute('inert', hide);
+    if (hide) sidenav.setAttribute('aria-hidden', 'true');
+    else sidenav.removeAttribute('aria-hidden');
+  }
+
+  function paintSidenav() {
+    sidenavNav.innerHTML = renderSidenav(currentSlug());
+    paintIcons(sidenavNav);
+  }
+
+  function stackForCurrentPage() {
+    const section = sectionOf(currentSlug());
+    return section ? ancestry(section).filter((s) => s !== HOME) : [];
+  }
+
+  function openMobileSidenav() {
+    if (desktopView.matches) return;
+    if (searchOpen) closeSearch();
+    window.scrollTo(0, 0);
+    mobileSidenavOpen = true;
+    mobileStack = stackForCurrentPage();
+    paintSidenav();
+    sidenav.classList.add('is-open');
+    sidenavOpenBtn.setAttribute('aria-expanded', 'true');
+    sidenavOpenBtn.querySelector('.sr-only').textContent = 'Close';
+    syncMobileSidenavHidden();
+    fitPanel(sidenav, true, () => mobileSidenavOpen);
+  }
+
+  function closeMobileSidenav() {
+    if (!mobileSidenavOpen) return;
+    mobileSidenavOpen = false;
+    sidenav.classList.remove('is-open');
+    sidenavOpenBtn.setAttribute('aria-expanded', 'false');
+    sidenavOpenBtn.querySelector('.sr-only').textContent = 'Menu';
+    syncMobileSidenavHidden();
+    fitPanel(sidenav, false, () => mobileSidenavOpen);
+    if (sidenav.contains(document.activeElement)) sidenavOpenBtn.focus();
+  }
+
+  sidenavOpenBtn.addEventListener('click', () => (mobileSidenavOpen ? closeMobileSidenav() : openMobileSidenav()));
+  sidenavNav.addEventListener('click', (e) => {
+    const down = e.target.closest('[data-sidenav-down]');
+    if (down) mobileStack.push(down.dataset.sidenavDown);
+    else if (e.target.closest('[data-sidenav-up]')) mobileStack.pop();
+    else return;
+    paintSidenav();
+    fitPanel(sidenav, true, () => mobileSidenavOpen);
+    const first = sidenavNav.querySelector('button, a');
+    if (first) first.focus();
+  });
+
+  let searchOpen = false;
+  function openSearch() {
+    if (mobileSidenavOpen) closeMobileSidenav();
+    searchOpen = true;
+    searchPanel.classList.add('is-open');
+    searchPanel.removeAttribute('inert');
+    searchToggle.setAttribute('aria-expanded', 'true');
+    searchToggle.querySelector('.sr-only').textContent = 'Close search';
+    fitPanel(searchPanel, true, () => searchOpen);
+    document.getElementById('site-search').focus({ preventScroll: true });
+  }
+  function closeSearch() {
+    if (!searchOpen) return;
+    searchOpen = false;
+    searchPanel.classList.remove('is-open');
+    searchPanel.setAttribute('inert', '');
+    searchToggle.setAttribute('aria-expanded', 'false');
+    searchToggle.querySelector('.sr-only').textContent = 'Search';
+    if (searchPanel.contains(document.activeElement)) searchToggle.focus();
+    fitPanel(searchPanel, false, () => searchOpen);
+  }
+  searchPanel.setAttribute('inert', '');
+  searchToggle.addEventListener('click', () => (searchOpen ? closeSearch() : openSearch()));
+  /* No backend in the prototype; submit is swallowed. */
+  document.getElementById('site-search-form').addEventListener('submit', (e) => e.preventDefault());
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    const t = e.target;
+    if (t && t.tagName === 'INPUT' && t.type === 'search' && t.value.length > 0) return;
+    if (mobileSidenavOpen) closeMobileSidenav();
+    else if (searchOpen) closeSearch();
+  });
+
+  desktopView.addEventListener('change', (e) => {
+    if (e.matches) closeMobileSidenav();
+    syncMobileSidenavHidden();
+    paintSidenav();
+  });
+
+  /* The rail sticks under the header, whatever height the header is. */
+  const chrome = document.querySelector('.chrome');
+  const syncChromeHeight = () => document.documentElement.style.setProperty('--chrome-h', chrome.offsetHeight + 'px');
+  new ResizeObserver(syncChromeHeight).observe(chrome);
+  syncChromeHeight();
+
+  /* =========================================================================
+     ROUTER — "#/" is Home, "#/<slug>" is any other page.
+     ========================================================================= */
+  function currentSlug() {
+    const h = location.hash;
+    if (!h || h === '#' || h === '#/') return HOME;
+    if (!h.startsWith('#/')) return null;
+    const slug = decodeURIComponent(h.slice(2)).replace(/\/$/, '');
+    return PAGES[slug] ? slug : HOME;
+  }
+
+  function render() {
+    const slug = currentSlug();
+    if (slug === null) return;
+    const p = PAGES[slug];
+    document.title = p.t;
+    sidenav.setAttribute('aria-label', slug === HOME ? 'Menu' : p.l);
+    paintSidenav();
+    if (slug === HOME) {
+      main.replaceChildren(document.getElementById('tpl-home').content.cloneNode(true));
+    } else {
+      main.innerHTML = renderInterior(slug, p);
+    }
+    paintIcons(main);
+  }
+
+  // Any in-app link closes the open panels and scrolls to top; the hash change
+  // does the routing. Parents in the mobile menu are buttons, so they drill
+  // without reaching this handler.
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('a[data-nav]');
+    if (!a) return;
+    if (searchOpen) closeSearch();
+    if (mobileSidenavOpen) closeMobileSidenav();
+    if (a.getAttribute('href') === location.hash) { e.preventDefault(); return; }
+    window.scrollTo(0, 0);
+  });
+
+  document.querySelector('.skip-link').addEventListener('click', (e) => {
+    e.preventDefault();
+    main.setAttribute('tabindex', '-1');
+    main.focus();
+  });
+
+  window.addEventListener('hashchange', render);
+  paintIcons(document);
+  syncMobileSidenavHidden();
+  render();
+</script>
+</body>
+</html>
